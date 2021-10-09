@@ -15,6 +15,7 @@ module.exports = {
       "features/displays",
       "features/encoders",
       "features/underglow",
+      "features/backlight",
       "features/beta-testing",
     ],
     Behaviors: [
@@ -29,7 +30,8 @@ module.exports = {
       "behaviors/reset",
       "behaviors/bluetooth",
       "behaviors/outputs",
-      "behaviors/lighting",
+      "behaviors/underglow",
+      "behaviors/backlight",
       "behaviors/power",
     ],
     Codes: [
