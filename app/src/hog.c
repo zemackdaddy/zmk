@@ -17,6 +17,7 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 #include <zmk/ble.h>
 #include <zmk/hog.h>
 #include <zmk/hid.h>
+#include <zmk/host.h>
 
 enum {
     HIDS_REMOTE_WAKE = BIT(0),
@@ -51,6 +52,11 @@ static struct hids_report input = {
     .type = HIDS_INPUT,
 };
 
+static struct hids_report output = {
+    .id = 0x01,
+    .type = HIDS_OUTPUT,
+};
+
 static struct hids_report consumer_input = {
     .id = 0x02,
     .type = HIDS_INPUT,
@@ -83,6 +89,31 @@ static ssize_t read_hids_input_report(struct bt_conn *conn, const struct bt_gatt
     struct zmk_hid_keyboard_report_body *report_body = &zmk_hid_get_keyboard_report()->body;
     return bt_gatt_attr_read(conn, attr, buf, len, offset, report_body,
                              sizeof(struct zmk_hid_keyboard_report_body));
+}
+
+static ssize_t write_hids_output_report(struct bt_conn *conn, const struct bt_gatt_attr *attr,
+                                        const void *buf, uint16_t len, uint16_t offset,
+                                        uint8_t flags) {
+    if (flags & BT_GATT_WRITE_FLAG_PREPARE) {
+        return 0;
+    }
+
+    if (len != sizeof(struct zmk_hid_led_report_body)) {
+        LOG_ERR("LED report is malformed: length=%d", len);
+        return BT_GATT_ERR(BT_ATT_ERR_INVALID_ATTRIBUTE_LEN);
+    }
+
+    struct zmk_hid_led_report_body led_report;
+    memcpy(&led_report, (uint8_t *)buf + offset, sizeof(struct zmk_hid_led_report_body));
+
+    struct zmk_host_report_source source = {
+        .endpoint = ZMK_ENDPOINT_BLE,
+        .profile = bt_conn_index(conn),
+    };
+
+    zmk_host_process_led_report(led_report, source);
+
+    return len;
 }
 
 static ssize_t read_hids_consumer_input_report(struct bt_conn *conn,
@@ -134,6 +165,10 @@ BT_GATT_SERVICE_DEFINE(
     BT_GATT_CCC(input_ccc_changed, BT_GATT_PERM_READ_ENCRYPT | BT_GATT_PERM_WRITE_ENCRYPT),
     BT_GATT_DESCRIPTOR(BT_UUID_HIDS_REPORT_REF, BT_GATT_PERM_READ_ENCRYPT, read_hids_report_ref,
                        NULL, &input),
+    BT_GATT_CHARACTERISTIC(BT_UUID_HIDS_REPORT, BT_GATT_CHRC_WRITE_WITHOUT_RESP,
+                           BT_GATT_PERM_WRITE_ENCRYPT, NULL, write_hids_output_report, NULL),
+    BT_GATT_DESCRIPTOR(BT_UUID_HIDS_REPORT_REF, BT_GATT_PERM_READ_ENCRYPT, read_hids_report_ref,
+                       NULL, &output),
     BT_GATT_CHARACTERISTIC(BT_UUID_HIDS_REPORT, BT_GATT_CHRC_READ | BT_GATT_CHRC_NOTIFY,
                            BT_GATT_PERM_READ_ENCRYPT, read_hids_consumer_input_report, NULL, NULL),
     BT_GATT_CCC(input_ccc_changed, BT_GATT_PERM_READ_ENCRYPT | BT_GATT_PERM_WRITE_ENCRYPT),

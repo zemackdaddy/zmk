@@ -69,6 +69,38 @@ static const uint8_t zmk_hid_report_desc[] = {
     HID_MI_INPUT,
     0x03,
 
+    /* USAGE_PAGE (Led) */
+    HID_GI_USAGE_PAGE,
+    HID_USAGE_LED,
+    /* USAGE_MINIMUM (Num Lock) */
+    HID_LI_USAGE_MIN(1),
+    HID_USAGE_LED_NUM_LOCK,
+    /* USAGE_MAXIMUM (Kana) */
+    HID_LI_USAGE_MAX(1),
+    HID_USAGE_LED_KANA,
+    /* REPORT_SIZE (1) */
+    HID_GI_REPORT_SIZE,
+    0x01,
+    /* REPORT_COUNT (5) */
+    HID_GI_REPORT_COUNT,
+    0x05,
+    /* OUTPUT (Data,Var,Abs) */
+    HID_MI_OUTPUT,
+    0x02,
+
+    /* USAGE_PAGE (Led) */
+    HID_GI_USAGE_PAGE,
+    HID_USAGE_LED,
+    /* REPORT_SIZE (3) */
+    HID_GI_REPORT_SIZE,
+    0x03,
+    /* REPORT_COUNT (1) */
+    HID_GI_REPORT_COUNT,
+    0x01,
+    /* OUTPUT (Cnst,Var,Abs) */
+    HID_MI_OUTPUT,
+    0x03,
+
     /* USAGE_PAGE (Keyboard/Keypad) */
     HID_GI_USAGE_PAGE,
     HID_USAGE_KEY,
@@ -205,6 +237,15 @@ struct zmk_hid_keyboard_report_body {
 struct zmk_hid_keyboard_report {
     uint8_t report_id;
     struct zmk_hid_keyboard_report_body body;
+} __packed;
+
+struct zmk_hid_led_report_body {
+    uint8_t leds;
+} __packed;
+
+struct zmk_hid_led_report {
+    uint8_t report_id;
+    struct zmk_hid_led_report_body body;
 } __packed;
 
 struct zmk_hid_consumer_report_body {
