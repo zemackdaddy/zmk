@@ -148,26 +148,23 @@ static const struct led_driver_api led_pwm_api = {
 };
 
 #define LED_PWM(led_node_id)                                                                       \
-    \
-{                                                                                           \
-        .dev = DEVICE_DT_GET(DT_PWMS_CTLR(led_node_id)),                                           \
+    {                                                                                              \
+        .dev = DEVICE_DT_GET(DT_PHANDLE(led_node_id, pwms)),                                       \
         .channel = DT_PWMS_CHANNEL(led_node_id),                                                   \
         .period = DT_PHA_OR(led_node_id, pwms, period, 100),                                       \
         .flags = DT_PHA_OR(led_node_id, pwms, flags, PWM_POLARITY_NORMAL),                         \
-    \
-},
+    },
 
 #define LED_PWM_DEVICE(id)                                                                         \
-    \
-static const struct led_pwm led_pwm_##id[] = {DT_INST_FOREACH_CHILD(id, LED_PWM)\
-};                                                                                                 \
-    \
-static const struct led_pwm_config led_pwm_config_##id = {                                         \
-        .num_leds = ARRAY_SIZE(led_pwm_##id), .led = led_pwm_##id,                                 \
-    \
-};                                                                                                 \
-    \
-DEVICE_DT_INST_DEFINE(id, &led_pwm_init, led_pwm_pm_control, NULL, &led_pwm_config_##id,           \
-                      POST_KERNEL, CONFIG_LED_INIT_PRIORITY, &led_pwm_api);
+                                                                                                   \
+    static const struct led_pwm led_pwm_##id[] = {DT_INST_FOREACH_CHILD(id, LED_PWM)};             \
+                                                                                                   \
+    static const struct led_pwm_config led_pwm_config_##id = {                                     \
+        .num_leds = ARRAY_SIZE(led_pwm_##id),                                                      \
+        .led = led_pwm_##id,                                                                       \
+    };                                                                                             \
+                                                                                                   \
+    DEVICE_DT_INST_DEFINE(id, &led_pwm_init, led_pwm_pm_control, NULL, &led_pwm_config_##id,       \
+                          POST_KERNEL, CONFIG_LED_INIT_PRIORITY, &led_pwm_api);
 
 DT_INST_FOREACH_STATUS_OKAY(LED_PWM_DEVICE)
