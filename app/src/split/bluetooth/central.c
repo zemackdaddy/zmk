@@ -18,7 +18,9 @@
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
 #include <zmk/ble.h>
+#include <zmk/behavior.h>
 #include <zmk/split/bluetooth/uuid.h>
+#include <zmk/split/bluetooth/service.h>
 #include <zmk/event_manager.h>
 #include <zmk/events/position_state_changed.h>
 #include <init.h>
@@ -33,6 +35,7 @@ static const struct bt_uuid_128 split_service_uuid = BT_UUID_INIT_128(ZMK_SPLIT_
 static struct bt_gatt_discover_params discover_params;
 static struct bt_gatt_subscribe_params subscribe_params;
 static struct bt_gatt_discover_params sub_discover_params;
+static uint16_t run_behavior_handle;
 
 K_MSGQ_DEFINE(peripheral_event_msgq, sizeof(struct zmk_position_state_changed),
               CONFIG_ZMK_SPLIT_BLE_CENTRAL_POSITION_QUEUE_SIZE, 4);
@@ -72,8 +75,10 @@ static uint8_t split_central_notify_func(struct bt_conn *conn,
             if (changed_positions[i] & BIT(j)) {
                 uint32_t position = (i * 8) + j;
                 bool pressed = position_state[i] & BIT(j);
-                struct zmk_position_state_changed ev = {
-                    .position = position, .state = pressed, .timestamp = k_uptime_get()};
+                struct zmk_position_state_changed ev = {.source = bt_conn_get_dst(conn),
+                                                        .position = position,
+                                                        .state = pressed,
+                                                        .timestamp = k_uptime_get()};
 
                 k_msgq_put(&peripheral_event_msgq, &ev, K_NO_WAIT);
                 k_work_submit(&peripheral_event_work);
@@ -127,9 +132,15 @@ static uint8_t split_central_chrc_discovery_func(struct bt_conn *conn,
         subscribe_params.notify = split_central_notify_func;
         subscribe_params.value = BT_GATT_CCC_NOTIFY;
         split_central_subscribe(conn);
+    } else if (!bt_uuid_cmp(((struct bt_gatt_chrc *)attr->user_data)->uuid,
+                            BT_UUID_DECLARE_128(ZMK_SPLIT_BT_CHAR_RUN_BEHAVIOR_UUID))) {
+        LOG_DBG("Found run behavior handle");
+        run_behavior_handle = bt_gatt_attr_value_handle(attr);
     }
 
-    return subscribe_params.value_handle ? BT_GATT_ITER_STOP : BT_GATT_ITER_CONTINUE;
+    bool subscribed = (run_behavior_handle && subscribe_params.value_handle);
+
+    return subscribed ? BT_GATT_ITER_STOP : BT_GATT_ITER_CONTINUE;
 }
 
 static uint8_t split_central_service_discovery_func(struct bt_conn *conn,
@@ -331,6 +342,7 @@ static void split_central_disconnected(struct bt_conn *conn, uint8_t reason) {
 
     // Clean up previously discovered handles;
     subscribe_params.value_handle = 0;
+    run_behavior_handle = 0;
 
     start_scan();
 }
@@ -338,6 +350,27 @@ static void split_central_disconnected(struct bt_conn *conn, uint8_t reason) {
 static struct bt_conn_cb conn_callbacks = {
     .connected = split_central_connected,
     .disconnected = split_central_disconnected,
+};
+
+int zmk_split_bt_invoke_behavior(const bt_addr_le_t *source, struct zmk_behavior_binding *binding,
+                                 struct zmk_behavior_binding_event event, bool state) {
+    struct zmk_split_run_behavior_payload payload = {.data = {
+                                                         .param1 = binding->param1,
+                                                         .param2 = binding->param2,
+                                                         .position = event.position,
+                                                         .state = state,
+                                                     }};
+    strncpy(payload.behavior_dev, binding->behavior_dev, ZMK_SPLIT_RUN_BEHAVIOR_DEV_LEN - 1);
+    payload.behavior_dev[ZMK_SPLIT_RUN_BEHAVIOR_DEV_LEN - 1] = '\0';
+
+    int err = bt_gatt_write_without_response(default_conn, run_behavior_handle, &payload,
+                                             sizeof(struct zmk_split_run_behavior_payload), true);
+
+    if (err) {
+        LOG_ERR("Failed to write the behavior characteristic (err %d)", err);
+    }
+
+    return err;
 };
 
 int zmk_split_bt_central_init(const struct device *_arg) {
