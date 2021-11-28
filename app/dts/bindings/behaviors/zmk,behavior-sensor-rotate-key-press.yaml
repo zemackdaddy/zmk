@@ -9,6 +9,9 @@ properties:
   label:
     type: string
     required: true
+  activation-resolution:
+    type: int
+    required: false
   "#sensor-binding-cells":
     type: int
     required: true
