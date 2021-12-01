@@ -320,6 +320,39 @@ config ZMK_RGB_UNDERGLOW_ON_START
 #ZMK_RGB_UNDERGLOW
 endif
 
+menuconfig ZMK_BACKLIGHT
+	bool "LED backlight"
+	select PWM
+	select LED
+	select ZMK_LED_PWM
+
+if ZMK_BACKLIGHT
+
+config ZMK_BACKLIGHT_BRT_STEP
+	int "Brightness step in percent"
+	range 1 100
+	default 20
+
+config ZMK_BACKLIGHT_BRT_START
+	int "Default brightness in percent"
+	range 1 100
+	default 40
+
+config ZMK_BACKLIGHT_ON_START
+	bool "Default backlight state"
+	default y
+
+config ZMK_BACKLIGHT_AUTO_OFF_IDLE
+	bool "Turn off backlight when keyboard goes into idle state"
+	default y
+
+config ZMK_BACKLIGHT_AUTO_OFF_USB
+	bool "Turn off backlight when USB is disconnected"
+	default n
+
+#ZMK_BACKLIGHT
+endif
+
 #Display/LED Options
 endmenu
 
@@ -509,4 +542,3 @@ osource "$(ZMK_CONFIG)/boards/shields/*/Kconfig.shield"
 
 
 source "Kconfig.zephyr"
-
