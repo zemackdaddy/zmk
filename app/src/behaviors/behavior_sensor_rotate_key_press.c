@@ -78,7 +78,7 @@ static const struct behavior_driver_api behavior_sensor_rotate_key_press_driver_
 #define KP_INST(n)                                                                                 \
     static const struct behavior_sensor_rotate_key_press_cfg                                       \
         behavior_sensor_rotate_key_press_cfg_##n = {                                               \
-            .activation_resolution = DT_INST_PROP_OR(n, activation_resolution, 1)};                \
+            .activation_resolution = (360 / DT_INST_PROP_OR(n, triggers_per_rotation, CONFIG_ZMK_ENCODERS_DEFAULT_TRIGGERS_PER_ROTATION))};                \
     static struct behavior_sensor_rotate_key_press_sensor_data                                     \
         behavior_sensor_rotate_key_press_sensor_data_##n;                                          \
     DEVICE_DT_INST_DEFINE(n, behavior_sensor_rotate_key_press_init, device_pm_control_nop,         \

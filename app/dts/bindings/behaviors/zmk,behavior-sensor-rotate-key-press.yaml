@@ -9,7 +9,7 @@ properties:
   label:
     type: string
     required: true
-  activation-resolution:
+  triggers-per-rotation:
     type: int
     required: false
   "#sensor-binding-cells":
