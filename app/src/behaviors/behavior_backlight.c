@@ -20,21 +20,59 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
 static int behavior_backlight_init(const struct device *dev) { return 0; }
 
+static int
+on_keymap_binding_convert_central_state_dependent_params(struct zmk_behavior_binding *binding,
+                                                         struct zmk_behavior_binding_event event) {
+    switch (binding->param1) {
+    case BL_TOG_CMD: {
+        bool state;
+        int err = zmk_backlight_get_state(&state);
+        if (err) {
+            LOG_ERR("Failed to get backlight state (err %d)", err);
+            return err;
+        }
+
+        binding->param1 = state ? BL_OFF_CMD : BL_ON_CMD;
+        break;
+    }
+    case BL_INC_CMD: {
+        uint8_t brightness = zmk_backlight_calc_brt(1);
+
+        binding->param1 = BL_SET_CMD;
+        binding->param2 = brightness;
+        break;
+    }
+    case BL_DEC_CMD: {
+        uint8_t brightness = zmk_backlight_calc_brt(-1);
+
+        binding->param1 = BL_SET_CMD;
+        binding->param2 = brightness;
+        break;
+    }
+    default:
+        return 0;
+    }
+
+    LOG_DBG("Backlight relative to absolute (%d/%d)", binding->param1, binding->param2);
+
+    return 0;
+}
+
 static int on_keymap_binding_pressed(struct zmk_behavior_binding *binding,
                                      struct zmk_behavior_binding_event event) {
     switch (binding->param1) {
-    case BL_TOG:
+    case BL_TOG_CMD:
         return zmk_backlight_toggle();
-    case BL_ON:
+    case BL_ON_CMD:
         return zmk_backlight_on();
-    case BL_OFF:
+    case BL_OFF_CMD:
         return zmk_backlight_off();
-    case BL_INC:
-        return zmk_backlight_inc();
-    case BL_DEC:
-        return zmk_backlight_dec();
-    default:
-        LOG_ERR("Unknown backlight command: %d", binding->param1);
+    case BL_INC_CMD:
+        return zmk_backlight_change_brt(1);
+    case BL_DEC_CMD:
+        return zmk_backlight_change_brt(-1);
+    case BL_SET_CMD:
+        return zmk_backlight_set_brt(binding->param2);
     }
 
     return -ENOTSUP;
@@ -46,9 +84,10 @@ static int on_keymap_binding_released(struct zmk_behavior_binding *binding,
 }
 
 static const struct behavior_driver_api behavior_backlight_driver_api = {
+    .binding_convert_central_state_dependent_params =
+        on_keymap_binding_convert_central_state_dependent_params,
     .binding_pressed = on_keymap_binding_pressed,
     .binding_released = on_keymap_binding_released,
-    .locality = BEHAVIOR_LOCALITY_GLOBAL,
 };
 
 DEVICE_DT_INST_DEFINE(0, behavior_backlight_init, device_pm_control_nop, NULL, NULL, APPLICATION,

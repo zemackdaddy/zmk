@@ -8,8 +8,8 @@
 	behaviors {
 		/omit-if-no-ref/ bl: behavior_backlight {
 			compatible = "zmk,behavior-backlight";
-			label = "BKLIGHT";
-			#binding-cells = <1>;
+			label = "BACKLIGHT";
+			#binding-cells = <2>;
 		};
 	};
 };
