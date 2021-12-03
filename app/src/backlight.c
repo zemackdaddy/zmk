@@ -29,6 +29,11 @@ BUILD_ASSERT(DT_HAS_CHOSEN(zmk_backlight),
 
 static const struct device *const backlight_dev = DEVICE_DT_GET(DT_CHOSEN(zmk_backlight));
 
+#define CHILD_COUNT(...) +1
+#define DT_NUM_CHILD(node_id) (DT_FOREACH_CHILD(node_id, CHILD_COUNT))
+
+#define BACKLIGHT_NUM_LEDS (DT_NUM_CHILD(DT_CHOSEN(zmk_backlight)))
+
 struct backlight_state {
     uint8_t brightness;
     bool on;
@@ -52,16 +57,15 @@ static int zmk_backlight_update() {
 static int backlight_settings_set(const char *name, size_t len, settings_read_cb read_cb,
                                   void *cb_arg) {
     const char *next;
-    int rc;
 
     if (settings_name_steq(name, "state", &next) && !next) {
         if (len != sizeof(state)) {
             return -EINVAL;
         }
 
-        rc = read_cb(cb_arg, &state, sizeof(state));
-        if (rc >= 0) {
-            return 0;
+        int rc = read_cb(cb_arg, &state, sizeof(state));
+        if (rc < 0) {
+            return rc;
         }
 
         return zmk_backlight_update();
@@ -146,11 +150,12 @@ int zmk_backlight_off() {
 int zmk_backlight_toggle() { return state.on ? zmk_backlight_off() : zmk_backlight_on(); }
 
 int zmk_backlight_set_brt(uint8_t brightness) {
-    if (brightness > BRT_MAX) {
+    if (brightness > BRT_MAX && state.on) {
         return -ENOTSUP;
     }
 
     state.brightness = brightness;
+    state.on = (brightness > 0);
 
     int rc = zmk_backlight_update();
     if (rc != 0) {
@@ -172,6 +177,7 @@ uint8_t zmk_backlight_calc_brt(int direction) {
 int zmk_backlight_change_brt(int direction) {
 
     state.brightness = zmk_backlight_calc_brt(direction);
+    state.on = (state.brightness > 0);
 
     int rc = zmk_backlight_update();
     if (rc != 0) {
