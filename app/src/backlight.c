@@ -64,7 +64,7 @@ static int backlight_settings_set(const char *name, size_t len, settings_read_cb
             return 0;
         }
 
-        return rc;
+        return zmk_backlight_update();
     }
 
     return -ENOENT;
