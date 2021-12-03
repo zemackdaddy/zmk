@@ -113,17 +113,11 @@ static int zmk_backlight_save_state() {
 }
 
 int zmk_backlight_get_state(bool *on_off) {
-    if (!backlight_dev)
-        return -ENODEV;
-
     *on_off = state.on;
     return 0;
 }
 
 int zmk_backlight_on() {
-    if (!backlight_dev)
-        return -ENODEV;
-
     if (!state.on && state.brightness == 0) {
         state.brightness = CONFIG_ZMK_BACKLIGHT_BRT_STEP;
     }
@@ -138,8 +132,6 @@ int zmk_backlight_on() {
 }
 
 int zmk_backlight_off() {
-    if (!backlight_dev)
-        return -ENODEV;
 
     state.on = false;
 
@@ -178,8 +170,6 @@ uint8_t zmk_backlight_calc_brt(int direction) {
 }
 
 int zmk_backlight_change_brt(int direction) {
-    if (!backlight_dev)
-        return -ENODEV;
 
     state.brightness = zmk_backlight_calc_brt(direction);
 
