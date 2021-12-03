@@ -39,7 +39,13 @@ static struct backlight_state state = {.brightness = CONFIG_ZMK_BACKLIGHT_BRT_ST
 
 static int zmk_backlight_update() {
     uint8_t brt = state.on ? state.brightness : 0;
-    return led_set_brightness(backlight_dev, 0, brt);
+    for (int i = 0; i < BACKLIGHT_NUM_LEDS; i++) {
+        int rc = led_set_brightness(backlight_dev, i, brt);
+        if (rc != 0) {
+            return rc;
+        }
+    }
+    return 0;
 }
 
 #if IS_ENABLED(CONFIG_SETTINGS)
@@ -64,7 +70,8 @@ static int backlight_settings_set(const char *name, size_t len, settings_read_cb
     return -ENOENT;
 }
 
-struct settings_handler backlight_conf = {.name = "backlight", .h_set = backlight_settings_set};
+static struct settings_handler backlight_conf = {.name = "backlight",
+                                                 .h_set = backlight_settings_set};
 
 static void zmk_backlight_save_state_work() {
     settings_save_one("backlight/state", &state, sizeof(state));
@@ -73,7 +80,7 @@ static void zmk_backlight_save_state_work() {
 static struct k_delayed_work backlight_save_work;
 #endif
 
-int zmk_backlight_init(const struct device *_arg) {
+static int zmk_backlight_init(const struct device *_arg) {
     if (!device_is_ready(backlight_dev)) {
         LOG_ERR("Backlight device \"%s\" is not ready", backlight_dev->name);
         return -ENODEV;
