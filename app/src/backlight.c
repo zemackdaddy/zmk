@@ -150,8 +150,8 @@ int zmk_backlight_off() {
 int zmk_backlight_toggle() { return state.on ? zmk_backlight_off() : zmk_backlight_on(); }
 
 int zmk_backlight_set_brt(uint8_t brightness) {
-    if (brightness > BRT_MAX && state.on) {
-        return -ENOTSUP;
+    if (brightness > BRT_MAX) {
+        brightness = BRT_MAX;
     }
 
     state.brightness = brightness;
