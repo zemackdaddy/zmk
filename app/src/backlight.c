@@ -22,8 +22,6 @@
 
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
-#define BRT_MAX 100
-
 BUILD_ASSERT(DT_HAS_CHOSEN(zmk_backlight),
              "CONFIG_ZMK_BACKLIGHT is enabled but no zmk,backlight chosen node found");
 
@@ -33,6 +31,8 @@ static const struct device *const backlight_dev = DEVICE_DT_GET(DT_CHOSEN(zmk_ba
 #define DT_NUM_CHILD(node_id) (DT_FOREACH_CHILD(node_id, CHILD_COUNT))
 
 #define BACKLIGHT_NUM_LEDS (DT_NUM_CHILD(DT_CHOSEN(zmk_backlight)))
+
+#define BRT_MAX 100
 
 struct backlight_state {
     uint8_t brightness;
@@ -147,6 +147,8 @@ int zmk_backlight_off() {
     return zmk_backlight_save_state();
 }
 
+int zmk_backlight_get_brt() { return state.on ? state.brightness : 0; }
+
 int zmk_backlight_toggle() { return state.on ? zmk_backlight_off() : zmk_backlight_on(); }
 
 int zmk_backlight_set_brt(uint8_t brightness) {
@@ -168,13 +170,11 @@ int zmk_backlight_set_brt(uint8_t brightness) {
 uint8_t zmk_backlight_calc_brt(int direction) {
     uint8_t brightness = state.brightness;
 
-    int b = brightness + (direction * CONFIG_ZMK_BACKLIGHT_BRT_STEP);
-    brightness = CLAMP(b, 0, BRT_MAX);
-
-    return brightness;
+    int b = state.brightness + (direction * CONFIG_ZMK_BACKLIGHT_BRT_STEP);
+    return CLAMP(b, 0, BRT_MAX);
 }
 
-int zmk_backlight_change_brt(int direction) {
+int zmk_backlight_adjust_brt(int direction) {
 
     state.brightness = zmk_backlight_calc_brt(direction);
     state.on = (state.brightness > 0);

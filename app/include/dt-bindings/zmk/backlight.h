@@ -16,4 +16,4 @@
 #define BL_OFF BL_OFF_CMD 0
 #define BL_INC BL_INC_CMD 0
 #define BL_DEC BL_DEC_CMD 0
-#define BL_SET BL_SET_CMD BRIGHTNESS
+#define BL_SET BL_SET_CMD

@@ -26,12 +26,7 @@ on_keymap_binding_convert_central_state_dependent_params(struct zmk_behavior_bin
     switch (binding->param1) {
     case BL_TOG_CMD: {
         bool state;
-        int err = zmk_backlight_get_state(&state);
-        if (err) {
-            LOG_ERR("Failed to get backlight state (err %d)", err);
-            return err;
-        }
-
+        zmk_backlight_get_state(&state);
         binding->param1 = state ? BL_OFF_CMD : BL_ON_CMD;
         break;
     }
@@ -68,9 +63,9 @@ static int on_keymap_binding_pressed(struct zmk_behavior_binding *binding,
     case BL_OFF_CMD:
         return zmk_backlight_off();
     case BL_INC_CMD:
-        return zmk_backlight_change_brt(1);
+        return zmk_backlight_adjust_brt(1);
     case BL_DEC_CMD:
-        return zmk_backlight_change_brt(-1);
+        return zmk_backlight_adjust_brt(-1);
     case BL_SET_CMD:
         return zmk_backlight_set_brt(binding->param2);
     }
