@@ -116,7 +116,7 @@ static int zmk_backlight_save_state() {
 #endif
 }
 
-int zmk_backlight_get_state(bool *on_off) {
+int zmk_backlight_get_on(bool *on_off) {
     *on_off = state.on;
     return 0;
 }
