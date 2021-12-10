@@ -7,7 +7,7 @@
 #pragma once
 
 int zmk_backlight_toggle();
-int zmk_backlight_get_on(bool *state);
+bool zmk_backlight_get_on();
 int zmk_backlight_on();
 int zmk_backlight_off();
 uint8_t zmk_backlight_calc_brt(int direction);

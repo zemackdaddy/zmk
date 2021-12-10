@@ -25,9 +25,7 @@ on_keymap_binding_convert_central_state_dependent_params(struct zmk_behavior_bin
                                                          struct zmk_behavior_binding_event event) {
     switch (binding->param1) {
     case BL_TOG_CMD: {
-        bool state;
-        zmk_backlight_get_on(&state);
-        binding->param1 = state ? BL_OFF_CMD : BL_ON_CMD;
+        binding->param1 = zmk_backlight_get_on() ? BL_OFF_CMD : BL_ON_CMD;
         break;
     }
     case BL_INC_CMD: {
