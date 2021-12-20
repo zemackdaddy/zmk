@@ -3,7 +3,12 @@
 
 config ZMK_LED_PWM
 	bool "PWM LED driver"
-	select LED
-	select PWM
+	depends on PWM
 	help
 	  Enable driver for PWM LEDs.
+
+config ZMK_LED_GPIO
+	bool "GPIO LED driver"
+	depends on GPIO
+	help
+	  Enable driver for GPIO LEDs.
