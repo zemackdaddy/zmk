@@ -22,12 +22,17 @@
 
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
-#define BRT_MAX 100
-
 BUILD_ASSERT(DT_HAS_CHOSEN(zmk_backlight),
              "CONFIG_ZMK_BACKLIGHT is enabled but no zmk,backlight chosen node found");
 
 static const struct device *const backlight_dev = DEVICE_DT_GET(DT_CHOSEN(zmk_backlight));
+
+#define CHILD_COUNT(...) +1
+#define DT_NUM_CHILD(node_id) (DT_FOREACH_CHILD(node_id, CHILD_COUNT))
+
+#define BACKLIGHT_NUM_LEDS (DT_NUM_CHILD(DT_CHOSEN(zmk_backlight)))
+
+#define BRT_MAX 100
 
 struct backlight_state {
     uint8_t brightness;
@@ -39,32 +44,40 @@ static struct backlight_state state = {.brightness = CONFIG_ZMK_BACKLIGHT_BRT_ST
 
 static int zmk_backlight_update() {
     uint8_t brt = state.on ? state.brightness : 0;
-    return led_set_brightness(backlight_dev, 0, brt);
+    LOG_DBG("Update backlight brightness: %d%%", brt);
+
+    for (int i = 0; i < BACKLIGHT_NUM_LEDS; i++) {
+        int rc = led_set_brightness(backlight_dev, i, brt);
+        if (rc != 0) {
+            return rc;
+        }
+    }
+    return 0;
 }
 
 #if IS_ENABLED(CONFIG_SETTINGS)
 static int backlight_settings_set(const char *name, size_t len, settings_read_cb read_cb,
                                   void *cb_arg) {
     const char *next;
-    int rc;
 
     if (settings_name_steq(name, "state", &next) && !next) {
         if (len != sizeof(state)) {
             return -EINVAL;
         }
 
-        rc = read_cb(cb_arg, &state, sizeof(state));
-        if (rc >= 0) {
-            return 0;
+        int rc = read_cb(cb_arg, &state, sizeof(state));
+        if (rc < 0) {
+            return rc;
         }
 
-        return rc;
+        return zmk_backlight_update();
     }
 
     return -ENOENT;
 }
 
-struct settings_handler backlight_conf = {.name = "backlight", .h_set = backlight_settings_set};
+static struct settings_handler backlight_conf = {.name = "backlight",
+                                                 .h_set = backlight_settings_set};
 
 static void zmk_backlight_save_state_work() {
     settings_save_one("backlight/state", &state, sizeof(state));
@@ -73,7 +86,7 @@ static void zmk_backlight_save_state_work() {
 static struct k_delayed_work backlight_save_work;
 #endif
 
-int zmk_backlight_init(const struct device *_arg) {
+static int zmk_backlight_init(const struct device *_arg) {
     if (!device_is_ready(backlight_dev)) {
         LOG_ERR("Backlight device \"%s\" is not ready", backlight_dev->name);
         return -ENODEV;
@@ -96,7 +109,12 @@ int zmk_backlight_init(const struct device *_arg) {
     return zmk_backlight_update();
 }
 
-static int zmk_backlight_save_state() {
+static int zmk_backlight_update_and_save() {
+    int rc = zmk_backlight_update();
+    if (rc != 0) {
+        return rc;
+    }
+
 #if IS_ENABLED(CONFIG_SETTINGS)
     k_delayed_work_cancel(&backlight_save_work);
     return k_delayed_work_submit(&backlight_save_work, K_MSEC(CONFIG_ZMK_SETTINGS_SAVE_DEBOUNCE));
@@ -105,83 +123,37 @@ static int zmk_backlight_save_state() {
 #endif
 }
 
-int zmk_backlight_get_state(bool *on_off) {
-    if (!backlight_dev)
-        return -ENODEV;
-
-    *on_off = state.on;
-    return 0;
-}
-
 int zmk_backlight_on() {
-    if (!backlight_dev)
-        return -ENODEV;
-
     if (!state.on && state.brightness == 0) {
         state.brightness = CONFIG_ZMK_BACKLIGHT_BRT_STEP;
     }
     state.on = true;
 
-    int rc = zmk_backlight_update();
-    if (rc != 0) {
-        return rc;
-    }
-
-    return zmk_backlight_save_state();
+    return zmk_backlight_update_and_save();
 }
 
 int zmk_backlight_off() {
-    if (!backlight_dev)
-        return -ENODEV;
-
     state.on = false;
 
-    int rc = zmk_backlight_update();
-    if (rc != 0) {
-        return rc;
-    }
-
-    return zmk_backlight_save_state();
+    return zmk_backlight_update_and_save();
 }
 
 int zmk_backlight_toggle() { return state.on ? zmk_backlight_off() : zmk_backlight_on(); }
 
+bool zmk_backlight_get_on() { return state.on; }
+
 int zmk_backlight_set_brt(uint8_t brightness) {
-    if (brightness > BRT_MAX) {
-        return -ENOTSUP;
-    }
+    state.brightness = MIN(brightness, BRT_MAX);
+    state.on = (state.brightness > 0);
 
-    state.brightness = brightness;
-
-    int rc = zmk_backlight_update();
-    if (rc != 0) {
-        return rc;
-    }
-
-    return zmk_backlight_save_state();
+    return zmk_backlight_update_and_save();
 }
+
+int zmk_backlight_get_brt() { return state.on ? state.brightness : 0; }
 
 uint8_t zmk_backlight_calc_brt(int direction) {
-    uint8_t brightness = state.brightness;
-
-    int b = brightness + (direction * CONFIG_ZMK_BACKLIGHT_BRT_STEP);
-    brightness = CLAMP(b, 0, BRT_MAX);
-
-    return brightness;
-}
-
-int zmk_backlight_change_brt(int direction) {
-    if (!backlight_dev)
-        return -ENODEV;
-
-    state.brightness = zmk_backlight_calc_brt(direction);
-
-    int rc = zmk_backlight_update();
-    if (rc != 0) {
-        return rc;
-    }
-
-    return zmk_backlight_save_state();
+    int brt = state.brightness + (direction * CONFIG_ZMK_BACKLIGHT_BRT_STEP);
+    return CLAMP(brt, 0, BRT_MAX);
 }
 
 #if IS_ENABLED(CONFIG_ZMK_BACKLIGHT_AUTO_OFF_IDLE)
@@ -193,34 +165,32 @@ static bool auto_off_usb_prev_state = false;
 #endif
 
 #if IS_ENABLED(CONFIG_ZMK_BACKLIGHT_AUTO_OFF_IDLE) || IS_ENABLED(CONFIG_ZMK_BACKLIGHT_AUTO_OFF_USB)
-static int backlight_auto_state(bool *prev_state, bool *new_state) {
-    if (state.on == *new_state) {
+static int backlight_auto_state(bool *prev_state, bool new_state) {
+    if (state.on == new_state) {
         return 0;
     }
-    if (*new_state) {
+    if (new_state) {
         state.on = *prev_state;
         *prev_state = false;
-        return zmk_backlight_on();
     } else {
         state.on = false;
         *prev_state = true;
-        return zmk_backlight_off();
     }
+    return zmk_backlight_update();
 }
 
 static int backlight_event_listener(const zmk_event_t *eh) {
 
 #if IS_ENABLED(CONFIG_ZMK_BACKLIGHT_AUTO_OFF_IDLE)
     if (as_zmk_activity_state_changed(eh)) {
-        bool new_state = (zmk_activity_get_state() == ZMK_ACTIVITY_ACTIVE);
-        return backlight_auto_state(&auto_off_idle_prev_state, &new_state);
+        return backlight_auto_state(&auto_off_idle_prev_state,
+                                    zmk_activity_get_state() == ZMK_ACTIVITY_ACTIVE);
     }
 #endif
 
 #if IS_ENABLED(CONFIG_ZMK_BACKLIGHT_AUTO_OFF_USB)
     if (as_zmk_usb_conn_state_changed(eh)) {
-        bool new_state = zmk_usb_is_powered();
-        return backlight_auto_state(&auto_off_usb_prev_state, &new_state);
+        return backlight_auto_state(&auto_off_usb_prev_state, zmk_usb_is_powered());
     }
 #endif
 

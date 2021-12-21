@@ -2,3 +2,4 @@
 # SPDX-License-Identifier: MIT
 
 zephyr_library_sources_ifdef(CONFIG_ZMK_LED_PWM led_pwm.c)
+zephyr_library_sources_ifdef(CONFIG_ZMK_LED_GPIO led_gpio.c)
