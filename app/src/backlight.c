@@ -49,6 +49,7 @@ static int zmk_backlight_update() {
     for (int i = 0; i < BACKLIGHT_NUM_LEDS; i++) {
         int rc = led_set_brightness(backlight_dev, i, brt);
         if (rc != 0) {
+            LOG_ERR("Failed to update backlight LED %d: %d", i, rc);
             return rc;
         }
     }
@@ -65,7 +66,7 @@ static int backlight_settings_load_cb(const char *name, size_t len, settings_rea
         }
 
         int rc = read_cb(cb_arg, &state, sizeof(state));
-        return MAX(rc, 0);
+        return MIN(rc, 0);
     }
     return -ENOENT;
 }
