@@ -1,0 +1,24 @@
+# Copyright (c) 2021 The ZMK Contributors
+# SPDX-License-Identifier: MIT
+
+description: All Point Addressable LEDs Strip
+
+compatible: "zmk,apa-led-strip"
+
+properties:
+
+  compatible:
+    type: string-array
+    required: true
+    description: compatible strings
+    
+  points:
+    type: uint8-array
+    required: true
+    description: |
+      Array of led indices of the underlying led_strip affected by this device  
+
+  led-strip:
+    type: phandle
+    required: true
+    description: Main led-strip device of which this node specifies a subset

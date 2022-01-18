@@ -4,6 +4,9 @@
  * SPDX-License-Identifier: MIT
  */
 
+#define DT_DRV_COMPAT zmk_behavior_rgb_underglow
+
+
 #include <device.h>
 #include <init.h>
 #include <kernel.h>
@@ -17,12 +20,14 @@
 #include <drivers/led_strip.h>
 #include <drivers/ext_power.h>
 
+#include <drivers/behavior.h>
 #include <zmk/rgb_underglow.h>
 
-LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
+#if IS_ENABLED(CONFIG_ZMK_APA_LED_STRIP)
+    #include <zmk/apa_led_strip.h>
+#endif
 
-#define STRIP_LABEL DT_LABEL(DT_CHOSEN(zmk_underglow))
-#define STRIP_NUM_PIXELS DT_PROP(DT_CHOSEN(zmk_underglow), chain_length)
+LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
 #define HUE_MAX 360
 #define SAT_MAX 100
@@ -47,7 +52,11 @@ struct rgb_underglow_state {
     bool on;
 };
 
-static const struct device *led_strip;
+const struct device *led_strip;
+
+#if IS_ENABLED(CONFIG_ZMK_APA_LED_STRIP)
+    const struct device * zmk_rgb_underglow_device;
+#endif
 
 static struct led_rgb pixels[STRIP_NUM_PIXELS];
 
@@ -178,7 +187,15 @@ static void zmk_rgb_underglow_tick(struct k_work *work) {
         break;
     }
 
-    led_strip_update_rgb(led_strip, pixels, STRIP_NUM_PIXELS);
+    #if IS_ENABLED(CONFIG_ZMK_APA_LED_STRIP)
+        apa_led_strip_update_rgb ( zmk_rgb_underglow_device,
+                                   pixels,
+                                   STRIP_NUM_PIXELS
+                                 );
+
+    #else
+        led_strip_update_rgb(led_strip, pixels, STRIP_NUM_PIXELS);
+    #endif
 }
 
 K_WORK_DEFINE(underglow_work, zmk_rgb_underglow_tick);
@@ -223,7 +240,30 @@ static void zmk_rgb_underglow_save_state_work() {
 static struct k_delayed_work underglow_save_work;
 #endif
 
+#if IS_ENABLED(CONFIG_ZMK_APA_LED_STRIP)
+
+    #define RGB_UNDERGLOW_DECL_CONFIG(inst)                                                                                                 \
+                extern struct rgb_underglow_config rgb_underglow_##inst##_config;
+
+    #define RGB_UNDERGLOW_INIT_CONFIG(inst)                                                                                                 \
+                rgb_underglow_##inst##_config.led_strip = device_get_binding(rgb_underglow_##inst##_config.led_strip_label);                \
+                if (rgb_underglow_##inst##_config.led_strip) {                                                                              \
+                    LOG_INF("Found LED strip device %s", rgb_underglow_##inst##_config.led_strip_label);                                    \
+                }                                                                                                                           \
+                else {                                                                                                                      \
+                    LOG_ERR("LED strip device %s not found", rgb_underglow_##inst##_config.led_strip_label);                                \
+                    return -EINVAL;                                                                                                         \
+                }
+
+    DT_INST_FOREACH_STATUS_OKAY(RGB_UNDERGLOW_DECL_CONFIG);
+#endif
+
 static int zmk_rgb_underglow_init(const struct device *_arg) {
+#if IS_ENABLED(CONFIG_ZMK_APA_LED_STRIP)
+    DT_INST_FOREACH_STATUS_OKAY(RGB_UNDERGLOW_INIT_CONFIG);
+    zmk_rgb_underglow_device = device_get_binding("RGB_UNDERGLOW");
+#endif
+
     led_strip = device_get_binding(STRIP_LABEL);
     if (led_strip) {
         LOG_INF("Found LED strip device %s", STRIP_LABEL);
@@ -311,20 +351,38 @@ int zmk_rgb_underglow_off() {
     if (!led_strip)
         return -ENODEV;
 
-#if IS_ENABLED(CONFIG_ZMK_RGB_UNDERGLOW_EXT_POWER)
-    if (ext_power != NULL) {
-        int rc = ext_power_disable(ext_power);
-        if (rc != 0) {
-            LOG_ERR("Unable to disable EXT_POWER: %d", rc);
-        }
-    }
-#endif
+    #if IS_ENABLED(CONFIG_ZMK_RGB_UNDERGLOW_EXT_POWER)
+        #if IS_ENABLED(CONFIG_ZMK_APA_LED_STRIP)
+            if (ext_power != NULL &&
+                ( ( struct rgb_underglow_config * ) zmk_rgb_underglow_device->config)->num_points == 0 ) {
+                // underglow behavior has been called without a led strip subset, so all pixels are affected
+                int rc = ext_power_disable(ext_power);
+                if (rc != 0) {
+                    LOG_ERR("Unable to disable EXT_POWER: %d", rc);
+                }
+            }
+        #else
+            if (ext_power != NULL) {
+                int rc = ext_power_disable(ext_power);
+                if (rc != 0) {
+                    LOG_ERR("Unable to disable EXT_POWER: %d", rc);
+                }
+            }
+        #endif
+    #endif
 
     for (int i = 0; i < STRIP_NUM_PIXELS; i++) {
         pixels[i] = (struct led_rgb){r : 0, g : 0, b : 0};
     }
 
-    led_strip_update_rgb(led_strip, pixels, STRIP_NUM_PIXELS);
+    #if IS_ENABLED(CONFIG_ZMK_APA_LED_STRIP)
+        apa_led_strip_update_rgb (  zmk_rgb_underglow_device,
+                                    pixels,
+                                    STRIP_NUM_PIXELS
+                                 );
+    #else
+        led_strip_update_rgb(led_strip, pixels, STRIP_NUM_PIXELS);
+    #endif
 
     k_timer_stop(&underglow_tick);
     state.on = false;

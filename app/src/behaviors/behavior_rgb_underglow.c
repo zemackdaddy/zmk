@@ -88,6 +88,13 @@ on_keymap_binding_convert_central_state_dependent_params(struct zmk_behavior_bin
 
 static int on_keymap_binding_pressed(struct zmk_behavior_binding *binding,
                                      struct zmk_behavior_binding_event event) {
+#if IS_ENABLED(CONFIG_ZMK_APA_LED_STRIP)
+    zmk_rgb_underglow_device = device_get_binding (binding->behavior_dev);
+    led_strip = ((struct rgb_underglow_config *) (zmk_rgb_underglow_device->config))->led_strip;
+#endif
+
+    LOG_INF("keymap_binding_pressed led_strip = %x", (unsigned int ) led_strip);
+
     switch (binding->param1) {
     case RGB_TOG_CMD:
         return zmk_rgb_underglow_toggle();
@@ -136,8 +143,37 @@ static const struct behavior_driver_api behavior_rgb_underglow_driver_api = {
     .binding_released = on_keymap_binding_released,
 };
 
-DEVICE_DT_INST_DEFINE(0, behavior_rgb_underglow_init, device_pm_control_nop, NULL, NULL,
-                      APPLICATION, CONFIG_KERNEL_INIT_PRIORITY_DEFAULT,
-                      &behavior_rgb_underglow_driver_api);
+#define RGB_UNDERGLOW_INIT(inst)                                                                   \
+    struct rgb_underglow_config rgb_underglow_##inst##_config = {                                  \
+        .led_strip_label = COND_CODE_1 ( DT_NODE_HAS_PROP(DT_DRV_INST(inst), led_strip),           \
+                                         ( DT_LABEL                                                \
+                                           ( DT_PHANDLE                                            \
+                                             ( DT_INST_PHANDLE (inst, led_strip),                  \
+                                               led_strip                                           \
+                                             )                                                     \
+                                           )                                                       \
+                                         ),                                                        \
+                                         (STRIP_LABEL)                                             \
+                                       ),                                                          \
+        .led_strip = 0,                                                                            \
+        .points = COND_CODE_1 ( DT_NODE_HAS_PROP(DT_DRV_INST(inst), led_strip),                    \
+                                (DT_INST_PROP_BY_PHANDLE_IDX(inst, led_strip, 0, points)),         \
+                                ({0,})                                                             \
+                              ),                                                                   \
+        .num_points = COND_CODE_1 ( DT_NODE_HAS_PROP(DT_DRV_INST(inst), led_strip),                \
+                                    ( DT_PROP_LEN                                                  \
+                                      ( DT_INST_PHANDLE (inst, led_strip),                         \
+                                        points                                                     \
+                                      )                                                            \
+                                    ),                                                             \
+                                    (0)                                                            \
+                                  ),                                                               \
+                                                                                                   \
+    };                                                                                             \
+    DEVICE_DT_INST_DEFINE(inst, behavior_rgb_underglow_init, device_pm_control_nop, NULL,          \
+                      & rgb_underglow_##inst##_config, APPLICATION,                                \
+                      CONFIG_KERNEL_INIT_PRIORITY_DEFAULT, &behavior_rgb_underglow_driver_api);
+
+DT_INST_FOREACH_STATUS_OKAY(RGB_UNDERGLOW_INIT);
 
 #endif /* DT_HAS_COMPAT_STATUS_OKAY(DT_DRV_COMPAT) */

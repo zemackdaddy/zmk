@@ -6,3 +6,10 @@ description: RGB Underglow Action
 compatible: "zmk,behavior-rgb-underglow"
 
 include: two_param.yaml
+
+properties:
+
+  led-strip:
+    type: phandle
+    required: false
+    description: LEDs subset to which the behavior is applied
