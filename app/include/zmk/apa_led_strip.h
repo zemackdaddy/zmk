@@ -12,7 +12,7 @@ extern "C" {
 
 int apa_led_strip_update_rgb (  const struct device * zmk_rgb_underglow_device,
 				                struct led_rgb *pixels,
-				                size_t num_pixels ); 
+				                size_t num_pixels );
 
 
 

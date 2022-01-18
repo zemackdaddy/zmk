@@ -110,5 +110,5 @@
 			points = [01 03 05 0A 0B];
 			led-strip = <&led_strip>;
 		};
-	}; 
+	};
 };

@@ -11,12 +11,12 @@ properties:
     type: string-array
     required: true
     description: compatible strings
-    
+
   points:
     type: uint8-array
     required: true
     description: |
-      Array of led indices of the underlying led_strip affected by this device  
+      Array of led indices of the underlying led_strip affected by this device
 
   led-strip:
     type: phandle

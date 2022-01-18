@@ -36,16 +36,16 @@ struct underglow_subsets_child_config {
     uint8_t num_of_points;
 };
 
-int apa_led_strip_update_rgb (  const struct device * zmk_rgb_underglow_device, 
+int apa_led_strip_update_rgb (  const struct device * zmk_rgb_underglow_device,
 				                struct led_rgb *pixels,
 				                size_t num_pixels ) {
-                                  
+
     uint8_t num_points = ((struct rgb_underglow_config *)zmk_rgb_underglow_device->config)->num_points;
     if ( num_points){
         // underglow behavior has been called with a led strip subset, so only a pixels subset is affected
         int point_index ;
         uint8_t * points = ((struct rgb_underglow_config *)zmk_rgb_underglow_device->config)->points;
-      
+
         for ( point_index = 0;
             point_index < num_points && point_index < STRIP_NUM_PIXELS;
             point_index ++ ) {
@@ -58,15 +58,15 @@ int apa_led_strip_update_rgb (  const struct device * zmk_rgb_underglow_device,
     else {
         // underglow behavior has been called without a led strip subset, so all pixels are affected
         int pixels_index;
-        for ( pixels_index = 0; 
+        for ( pixels_index = 0;
               pixels_index < STRIP_NUM_PIXELS && pixels_index < num_pixels;
               pixels_index ++
-            ) { 
+            ) {
             pixels_buffer[pixels_index] = pixels [pixels_index];
         }
     }
     return led_strip_update_rgb( ((struct rgb_underglow_config *)zmk_rgb_underglow_device->config)->led_strip, 
-                                 pixels_buffer, 
+                                 pixels_buffer,
                                  num_pixels
                                );
 }
