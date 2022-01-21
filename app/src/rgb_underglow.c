@@ -18,6 +18,7 @@
 #include <drivers/ext_power.h>
 
 #include <zmk/rgb_underglow.h>
+#include <zmk/keymap.h>
 
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
@@ -36,6 +37,7 @@ enum rgb_underglow_effect {
     UNDERGLOW_EFFECT_BREATHE,
     UNDERGLOW_EFFECT_SPECTRUM,
     UNDERGLOW_EFFECT_SWIRL,
+    UNDERGLOW_EFFECT_DEFAULTLAYER,
     UNDERGLOW_EFFECT_NUMBER // Used to track number of underglow effects
 };
 
@@ -162,6 +164,38 @@ static void zmk_rgb_underglow_effect_swirl() {
     state.animation_step = state.animation_step % HUE_MAX;
 }
 
+static void zmk_rgb_underglow_effect_layer_default() {
+    struct led_rgb rgb;
+    switch (zmk_keymap_layer_default()) {
+    case 0:
+        rgb.r = 255;
+        rgb.g = 0;
+        rgb.b = 0;
+        break;
+    case 1:
+        rgb.r = 0;
+        rgb.g = 255;
+        rgb.b = 0;
+        break;
+    case 2:
+        rgb.r = 0;
+        rgb.g = 0;
+        rgb.b = 255;
+        break;
+    case 3:
+        rgb.r = 255;
+        rgb.g = 255;
+        rgb.b = 0;
+        break;
+    default:
+        break;
+    }
+
+    for (int i = 0; i < STRIP_NUM_PIXELS; i++) {
+        pixels[i] = rgb;
+    }
+}
+
 static void zmk_rgb_underglow_tick(struct k_work *work) {
     switch (state.current_effect) {
     case UNDERGLOW_EFFECT_SOLID:
@@ -175,6 +209,9 @@ static void zmk_rgb_underglow_tick(struct k_work *work) {
         break;
     case UNDERGLOW_EFFECT_SWIRL:
         zmk_rgb_underglow_effect_swirl();
+        break;
+    case UNDERGLOW_EFFECT_DEFAULTLAYER:
+        zmk_rgb_underglow_effect_layer_default();
         break;
     }
 
