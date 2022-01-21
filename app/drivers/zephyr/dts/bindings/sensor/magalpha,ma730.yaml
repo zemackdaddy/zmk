@@ -1,7 +1,9 @@
 description: |
-  Sensor driver for the Alps EC11 rotary encoder
+  Sensor driver for the Magalpha MA730 rotary encoder
 
-compatible: "alps,ec11"
+compatible: "magalpha,ma730"
+
+include: spi-device.yaml
 
 properties:
   label:
@@ -18,8 +20,4 @@ properties:
   resolution:
     type: int
     description: Number of pulses per tick
-    required: false
-  steps:
-    type: int
-    description: Number of pulses in one full rotation
     required: false
