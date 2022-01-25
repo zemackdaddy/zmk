@@ -6,11 +6,13 @@
 
 #include <device.h>
 #include <init.h>
+#include <kernel.h>
 
 #include <usb/usb_device.h>
 #include <usb/class/usb_hid.h>
 
 #include <zmk/hid.h>
+#include <zmk/host.h>
 #include <zmk/keymap.h>
 #include <zmk/event_manager.h>
 #include <zmk/events/usb_conn_state_changed.h>
@@ -34,8 +36,35 @@ static K_SEM_DEFINE(hid_sem, 1, 1);
 
 static void in_ready_cb(const struct device *dev) { k_sem_give(&hid_sem); }
 
+static void out_ready_cb(const struct device *dev) {
+    size_t len;
+    int rc = hid_int_ep_read(hid_dev, NULL, 0, &len);
+    if (rc != 0) {
+        LOG_ERR("Failed to read USB report length: %d", rc);
+        return;
+    }
+
+    struct zmk_host_usb_report report;
+    report.data = k_malloc(len);
+
+    if (report.data == NULL) {
+        LOG_ERR("Failed to allocate memory");
+        return;
+    }
+
+    rc = hid_int_ep_read(hid_dev, report.data, len, &report.length);
+    if (rc != 0) {
+        LOG_ERR("Failed to read USB report: %d", rc);
+    } else {
+        zmk_host_process_usb_report(report);
+    }
+
+    k_free(report.data);
+}
+
 static const struct hid_ops ops = {
     .int_in_ready = in_ready_cb,
+    .int_out_ready = out_ready_cb,
 };
 
 int zmk_usb_hid_send_report(const uint8_t *report, size_t len) {

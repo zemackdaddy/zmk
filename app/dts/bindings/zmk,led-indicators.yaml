@@ -1,0 +1,21 @@
+# Copyright (c) 2021 The ZMK Contributors
+# SPDX-License-Identifier: MIT
+
+description: LED indicators
+
+compatible: "zmk,led-indicators"
+
+child-binding:
+  description: LED indicator
+
+  properties:
+    dev:
+      type: phandle
+      required: true
+    index:
+      type: int
+      required: true
+    binding:
+      type: int
+      required: true
+

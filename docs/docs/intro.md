@@ -29,6 +29,7 @@ ZMK is currently missing some features found in other popular firmware. This tab
 | [Display Support](features/displays.md)[^2]                                                                                        | 🚧  |    🚧     | ✅  |
 | [RGB Underglow](features/underglow.md)                                                                                             | ✅  |    ✅     | ✅  |
 | [Backlight](features/backlight.md)                                                                                                 | ✅  |    ✅     | ✅  |
+| [LED indicators](features/led-indicators.md)                                                                                       | ✅  |           | ✅  |
 | One Shot Keys                                                                                                                      | ✅  |    ✅     | ✅  |
 | [Combo Keys](features/combos.md)                                                                                                   | ✅  |           | ✅  |
 | Macros                                                                                                                             | 🚧  |    ✅     | ✅  |
