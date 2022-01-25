@@ -145,14 +145,19 @@ int zmk_keymap_layer_change_default(int direction) {
     // since default layer must remain active it shift default first, activates then deactivates old
     // layer
     LOG_DBG("change default %d layer %d", _zmk_keymap_layer_default, direction);
-    if (_zmk_keymap_layer_default == 0 && direction == -1)
-        return 0;
-    else if (_zmk_keymap_layer_default == (ZMK_KEYMAP_LAYERS_LEN - 1) && direction == 1)
-        return 0;
-    else
+    if (_zmk_keymap_layer_default == 0 && direction == -1) {
+        _zmk_keymap_layer_default = (ZMK_KEYMAP_LAYERS_LEN - 2);
+        zmk_keymap_layer_activate(_zmk_keymap_layer_default);
+        zmk_keymap_layer_deactivate(0);
+    } else if (_zmk_keymap_layer_default == (ZMK_KEYMAP_LAYERS_LEN - 2) && direction == 1) {
+        _zmk_keymap_layer_default = 0;
+        zmk_keymap_layer_activate(_zmk_keymap_layer_default);
+        zmk_keymap_layer_deactivate(ZMK_KEYMAP_LAYERS_LEN - 2);
+    } else {
         _zmk_keymap_layer_default = _zmk_keymap_layer_default + direction;
-    zmk_keymap_layer_activate(_zmk_keymap_layer_default);
-    zmk_keymap_layer_deactivate(_zmk_keymap_layer_default - direction);
+        zmk_keymap_layer_activate(_zmk_keymap_layer_default);
+        zmk_keymap_layer_deactivate(_zmk_keymap_layer_default - direction);
+    }
     return 0;
 }
 
@@ -243,9 +248,7 @@ int zmk_keymap_sensor_triggered(
             }
 
             struct zmk_behavior_binding_event event = {
-                .layer = layer,
-                .position = sensor_position,
-                .timestamp = timestamp,
+                .layer = layer, .position = sensor_position, .timestamp = timestamp,
             };
 
             ret = behavior_sensor_keymap_binding_triggered(binding, event, channel_data_size,

@@ -1,0 +1,18 @@
+# Copyright (c) 2020 The ZMK Contributors
+# SPDX-License-Identifier: MIT
+
+description: Sensor rotate shift layer behavior
+
+compatible: "zmk,behavior-sensor-shift-default-layer"
+
+properties:
+  label:
+    type: string
+    required: true
+  triggers-per-rotation:
+    type: int
+    required: false
+  "#sensor-binding-cells":
+    type: int
+    required: false
+    const: 0

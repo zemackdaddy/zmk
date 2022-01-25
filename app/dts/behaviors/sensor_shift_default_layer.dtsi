@@ -1,0 +1,15 @@
+/*
+ * Copyright (c) 2020 The ZMK Contributors
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
+/ {
+	behaviors {
+		/omit-if-no-ref/ def_lshft: behavior_sensor_shift_default_layer{
+			compatible = "zmk,behavior-sensor-shift-default-layer";
+			label = "ENC_LYR_SHIFT";
+      #sensor-binding-cells = <0>;
+		};
+	};
+};

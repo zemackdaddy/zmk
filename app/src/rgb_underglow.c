@@ -187,6 +187,16 @@ static void zmk_rgb_underglow_effect_layer_default() {
         rgb.g = 255;
         rgb.b = 0;
         break;
+    case 4:
+        rgb.r = 0;
+        rgb.g = 255;
+        rgb.b = 255;
+        break;
+    case 5:
+        rgb.r = 255;
+        rgb.g = 0;
+        rgb.b = 255;
+        break;
     default:
         break;
     }
