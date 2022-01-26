@@ -25,7 +25,7 @@ on_keymap_binding_convert_central_state_dependent_params(struct zmk_behavior_bin
                                                          struct zmk_behavior_binding_event event) {
     switch (binding->param1) {
     case BL_TOG_CMD:
-        binding->param1 = zmk_backlight_get_on() ? BL_OFF_CMD : BL_ON_CMD;
+        binding->param1 = zmk_backlight_is_on() ? BL_OFF_CMD : BL_ON_CMD;
         break;
     case BL_INC_CMD:
         binding->param1 = BL_SET_CMD;
@@ -34,6 +34,10 @@ on_keymap_binding_convert_central_state_dependent_params(struct zmk_behavior_bin
     case BL_DEC_CMD:
         binding->param1 = BL_SET_CMD;
         binding->param2 = zmk_backlight_calc_brt(-1);
+        break;
+    case BL_CYCLE_CMD:
+        binding->param1 = BL_SET_CMD;
+        binding->param2 = zmk_backlight_calc_brt_cycle();
         break;
     default:
         return 0;
@@ -54,11 +58,15 @@ static int on_keymap_binding_pressed(struct zmk_behavior_binding *binding,
     case BL_TOG_CMD:
         return zmk_backlight_toggle();
     case BL_INC_CMD: {
-        int brt = zmk_backlight_calc_brt(1);
+        uint8_t brt = zmk_backlight_calc_brt(1);
         return zmk_backlight_set_brt(brt);
     }
     case BL_DEC_CMD: {
-        int brt = zmk_backlight_calc_brt(1);
+        uint8_t brt = zmk_backlight_calc_brt(-1);
+        return zmk_backlight_set_brt(brt);
+    }
+    case BL_CYCLE_CMD: {
+        uint8_t brt = zmk_backlight_calc_brt_cycle();
         return zmk_backlight_set_brt(brt);
     }
     case BL_SET_CMD:
