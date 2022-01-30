@@ -141,9 +141,9 @@ static struct led_rgb hsb_to_rgb(struct zmk_led_hsb hsb) {
 }
 
 int zmk_rgb_underglow_set_periph(struct zmk_periph_led periph) {
-    led_data = periph;
-    LOG_DBG("Update led_data %d %d", led_data.layer, led_data.indicators);
-    return 0;
+  led_data = periph;
+  LOG_DBG("Update led_data %d %d", led_data.layer, led_data.indicators);
+  return 0;
 }
 
 static void zmk_rgb_underglow_effect_solid() {
@@ -276,7 +276,7 @@ static void zmk_rgb_underglow_effect_kinesis() {
         pixels[2].b = 0;
         break;
     }
-    if (old_led_data.layer != led_data.layer || old_led_data.indicators != led_data.indicators) {
+    if(old_led_data.layer != led_data.layer || old_led_data.indicators != led_data.indicators){
         int err = zmk_split_bt_update_led(&led_data);
         if (err) {
             LOG_ERR("send failed (err %d)", err);
@@ -465,6 +465,7 @@ static int zmk_rgb_underglow_init(const struct device *_arg) {
 
     settings_load_subtree("rgb/underglow");
 #endif
+
 
     zmk_rgb_underglow_save_state();
     k_work_submit(&underglow_work);

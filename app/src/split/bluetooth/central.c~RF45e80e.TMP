@@ -257,8 +257,7 @@ static uint8_t split_central_chrc_discovery_func(struct bt_conn *conn,
         slot->update_led_handle = bt_gatt_attr_value_handle(attr);
     }
 
-    bool subscribed = (slot->update_led_handle && slot->run_behavior_handle &&
-                       slot->subscribe_params.value_handle);
+    bool subscribed = (slot->update_led_handle && slot->run_behavior_handle && slot->subscribe_params.value_handle);
 
     return subscribed ? BT_GATT_ITER_STOP : BT_GATT_ITER_CONTINUE;
 }
@@ -568,7 +567,8 @@ K_THREAD_STACK_DEFINE(split_central_split_led_q_stack,
 
 struct k_work_q split_central_split_led_q;
 
-K_MSGQ_DEFINE(zmk_split_central_split_led_msgq, sizeof(struct zmk_split_update_led_data),
+K_MSGQ_DEFINE(zmk_split_central_split_led_msgq,
+              sizeof(struct zmk_split_update_led_data),
               CONFIG_ZMK_BLE_SPLIT_CENTRAL_SPLIT_LED_QUEUE_SIZE, 2);
 
 void split_central_split_led_callback(struct k_work *work) {
@@ -582,9 +582,10 @@ void split_central_split_led_callback(struct k_work *work) {
             continue;
         }
 
-        int err = bt_gatt_write_without_response(peripherals[0].conn,
-                                                 peripherals[0].update_led_handle, &payload,
-                                                 sizeof(struct zmk_split_update_led_data), true);
+        int err = bt_gatt_write_without_response(
+            peripherals[0].conn,
+            peripherals[0].update_led_handle, &payload,
+            sizeof(struct zmk_split_update_led_data), true);
 
         if (err) {
             LOG_ERR("Failed to write the update led characteristic (err %d)", err);
@@ -594,7 +595,8 @@ void split_central_split_led_callback(struct k_work *work) {
 
 K_WORK_DEFINE(split_central_split_led_work, split_central_split_led_callback);
 
-static int split_bt_update_led_payload(struct zmk_split_update_led_data payload) {
+static int
+split_bt_update_led_payload(struct zmk_split_update_led_data payload) {
     LOG_DBG("");
 
     int err = k_msgq_put(&zmk_split_central_split_led_msgq, &payload, K_MSEC(100));
@@ -619,7 +621,8 @@ static int split_bt_update_led_payload(struct zmk_split_update_led_data payload)
 
 int zmk_split_bt_update_led(struct zmk_periph_led *periph) {
     struct zmk_split_update_led_data payload = {.layer = periph->layer,
-                                                .indicators = periph->indicators};
+                                                         .indicators = periph->indicators
+                                                     };
 
     return split_bt_update_led_payload(payload);
 }
