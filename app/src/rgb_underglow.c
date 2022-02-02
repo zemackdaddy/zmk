@@ -72,6 +72,8 @@ static struct rgb_underglow_state state;
 
 static struct zmk_periph_led led_data;
 
+static bool last_ble_state[2];
+
 #if ZMK_BLE_IS_CENTRAL
 static struct zmk_periph_led old_led_data;
 #endif
@@ -227,7 +229,6 @@ static void zmk_rgb_underglow_effect_kinesis() {
         pixels[1].b = 0;
         break;
     }
-    static bool last_ble_state[2];
     // blink second led slowly if bluetooth not paired, quickly if not connected
     if (zmk_ble_active_profile_is_open()) {
         pixels[1].r = pixels[1].r * last_ble_state[0];
@@ -284,41 +285,73 @@ static void zmk_rgb_underglow_effect_kinesis() {
     }
 #else
     // leds for peripheral(right) side
-    // set first led as LED_NUMLOCK
-    pixels[2].r = (led_data.indicators & BIT(LED_NUMLOCK)) * 255;
-    pixels[2].g = (led_data.indicators & BIT(LED_NUMLOCK)) * 255;
-    pixels[2].b = (led_data.indicators & BIT(LED_NUMLOCK)) * 255;
-    // set second led as scroll Lock
-    pixels[1].r = (led_data.indicators & BIT(LED_SCROLLLOCK)) * 255;
-    pixels[1].g = (led_data.indicators & BIT(LED_SCROLLLOCK)) * 255;
-    pixels[1].b = (led_data.indicators & BIT(LED_SCROLLLOCK)) * 255;
-    // set third led as layer
-    switch (led_data.layer) {
-    case 0:
-        pixels[0].r = 255;
-        pixels[0].g = 255;
-        pixels[0].b = 255;
-        break;
-    case 1:
-        pixels[0].r = 0;
-        pixels[0].g = 0;
-        pixels[0].b = 255;
-        break;
-    case 2:
-        pixels[0].r = 255;
-        pixels[0].g = 0;
-        pixels[0].b = 0;
-        break;
-    case 3:
-        pixels[0].r = 0;
-        pixels[0].g = 255;
-        pixels[0].b = 0;
-        break;
-    default:
-        pixels[0].r = 0;
-        pixels[0].g = 0;
-        pixels[0].b = 0;
-        break;
+    if (zmk_ble_active_profile_is_open()) {
+        pixels[1].r = 255 * last_ble_state[0];
+        pixels[1].g = 0;
+        pixels[1].b = 0;
+        pixels[2].r = 255 * last_ble_state[0];
+        pixels[2].g = 0;
+        pixels[2].b = 0;
+        pixels[2].r = 255 * last_ble_state[0];
+        pixels[2].g = 0;
+        pixels[2].b = 0;
+        if (state.animation_step > 5) {
+            last_ble_state[0] = !last_ble_state[0];
+            state.animation_step = 0;
+        }
+        state.animation_step++;
+    } else if (!zmk_ble_active_profile_is_connected()) {
+        pixels[1].r = 255 * last_ble_state[1];
+        pixels[1].g = 0;
+        pixels[1].b = 0;
+        pixels[2].r = 255 * last_ble_state[1];
+        pixels[2].g = 0;
+        pixels[2].b = 0;
+        pixels[2].r = 255 * last_ble_state[1];
+        pixels[2].g = 0;
+        pixels[2].b = 0;
+        if (state.animation_step > 29) {
+            last_ble_state[1] = !last_ble_state[1];
+            state.animation_step = 0;
+        }
+        state.animation_step++;
+    } else {
+        // set first led as LED_NUMLOCK
+        pixels[2].r = (led_data.indicators & BIT(LED_NUMLOCK)) * 255;
+        pixels[2].g = (led_data.indicators & BIT(LED_NUMLOCK)) * 255;
+        pixels[2].b = (led_data.indicators & BIT(LED_NUMLOCK)) * 255;
+        // set second led as scroll Lock
+        pixels[1].r = (led_data.indicators & BIT(LED_SCROLLLOCK)) * 255;
+        pixels[1].g = (led_data.indicators & BIT(LED_SCROLLLOCK)) * 255;
+        pixels[1].b = (led_data.indicators & BIT(LED_SCROLLLOCK)) * 255;
+        // set third led as layer
+        switch (led_data.layer) {
+        case 0:
+            pixels[0].r = 255;
+            pixels[0].g = 255;
+            pixels[0].b = 255;
+            break;
+        case 1:
+            pixels[0].r = 0;
+            pixels[0].g = 0;
+            pixels[0].b = 255;
+            break;
+        case 2:
+            pixels[0].r = 255;
+            pixels[0].g = 0;
+            pixels[0].b = 0;
+            break;
+        case 3:
+            pixels[0].r = 0;
+            pixels[0].g = 255;
+            pixels[0].b = 0;
+            break;
+        default:
+            pixels[0].r = 0;
+            pixels[0].g = 0;
+            pixels[0].b = 0;
+            break;
+        }
     }
 #endif
 }
