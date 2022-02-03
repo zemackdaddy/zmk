@@ -234,7 +234,7 @@ static void zmk_rgb_underglow_effect_kinesis() {
         pixels[1].r = pixels[1].r * last_ble_state[0];
         pixels[1].g = pixels[1].g * last_ble_state[0];
         pixels[1].b = pixels[1].b * last_ble_state[0];
-        if (state.animation_step > 5) {
+        if (state.animation_step > 3) {
             last_ble_state[0] = !last_ble_state[0];
             state.animation_step = 0;
         }
@@ -243,7 +243,7 @@ static void zmk_rgb_underglow_effect_kinesis() {
         pixels[1].r = pixels[1].r * last_ble_state[1];
         pixels[1].g = pixels[1].g * last_ble_state[1];
         pixels[1].b = pixels[1].b * last_ble_state[1];
-        if (state.animation_step > 29) {
+        if (state.animation_step > 14) {
             last_ble_state[1] = !last_ble_state[1];
             state.animation_step = 0;
         }
@@ -286,31 +286,31 @@ static void zmk_rgb_underglow_effect_kinesis() {
 #else
     // leds for peripheral(right) side
     if (zmk_ble_active_profile_is_open()) {
+        pixels[0].r = 255 * last_ble_state[0];
+        pixels[0].g = 0;
+        pixels[0].b = 0;
         pixels[1].r = 255 * last_ble_state[0];
         pixels[1].g = 0;
         pixels[1].b = 0;
         pixels[2].r = 255 * last_ble_state[0];
         pixels[2].g = 0;
         pixels[2].b = 0;
-        pixels[2].r = 255 * last_ble_state[0];
-        pixels[2].g = 0;
-        pixels[2].b = 0;
-        if (state.animation_step > 5) {
+        if (state.animation_step > 3) {
             last_ble_state[0] = !last_ble_state[0];
             state.animation_step = 0;
         }
         state.animation_step++;
     } else if (!zmk_ble_active_profile_is_connected()) {
+        pixels[0].r = 255 * last_ble_state[1];
+        pixels[0].g = 0;
+        pixels[0].b = 0;
         pixels[1].r = 255 * last_ble_state[1];
         pixels[1].g = 0;
         pixels[1].b = 0;
         pixels[2].r = 255 * last_ble_state[1];
         pixels[2].g = 0;
         pixels[2].b = 0;
-        pixels[2].r = 255 * last_ble_state[1];
-        pixels[2].g = 0;
-        pixels[2].b = 0;
-        if (state.animation_step > 29) {
+        if (state.animation_step > 14) {
             last_ble_state[1] = !last_ble_state[1];
             state.animation_step = 0;
         }
