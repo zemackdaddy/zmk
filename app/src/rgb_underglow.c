@@ -4,9 +4,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-#define DT_DRV_COMPAT zmk_behavior_rgb_underglow
-
-
 #include <device.h>
 #include <init.h>
 #include <kernel.h>
@@ -19,13 +16,7 @@
 
 #include <drivers/led_strip.h>
 #include <drivers/ext_power.h>
-
-#include <drivers/behavior.h>
 #include <zmk/rgb_underglow.h>
-
-#if IS_ENABLED(CONFIG_ZMK_APA_LED_STRIP)
-    #include <zmk/apa_led_strip.h>
-#endif
 
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
@@ -44,25 +35,7 @@ enum rgb_underglow_effect {
     UNDERGLOW_EFFECT_NUMBER // Used to track number of underglow effects
 };
 
-struct rgb_underglow_state {
-    struct zmk_led_hsb color;
-    uint8_t animation_speed;
-    uint8_t current_effect;
-    uint16_t animation_step;
-    bool on;
-};
-
-const struct device *led_strip;
-
-#if IS_ENABLED(CONFIG_ZMK_APA_LED_STRIP)
-    const struct device * zmk_rgb_underglow_device;
-#endif
-
-static struct led_rgb pixels[STRIP_NUM_PIXELS];
-
-static struct rgb_underglow_state state;
-
-#if IS_ENABLED(CONFIG_ZMK_RGB_UNDERGLOW_EXT_POWER)
+#if IS_ENABLED(CONFIG_ZMK_RGB_UNDERGLOW_EXT_POWER) && ! IS_ENABLED(CONFIG_ZMK_APA_LED_STRIP)
 static const struct device *ext_power;
 #endif
 
@@ -126,101 +99,98 @@ static struct led_rgb hsb_to_rgb(struct zmk_led_hsb hsb) {
     return rgb;
 }
 
-static void zmk_rgb_underglow_effect_solid() {
-    for (int i = 0; i < STRIP_NUM_PIXELS; i++) {
-        pixels[i] = hsb_to_rgb(hsb_scale_min_max(state.color));
+static void zmk_rgb_underglow_effect_solid(struct zmk_rgb_underglow_device_data * underglow_data) {
+    for (int i = 0; i < underglow_data->num_pixels; i++) {
+        underglow_data->pixels[i] = hsb_to_rgb(hsb_scale_min_max(underglow_data->state.color));
     }
 }
 
-static void zmk_rgb_underglow_effect_breathe() {
-    for (int i = 0; i < STRIP_NUM_PIXELS; i++) {
-        struct zmk_led_hsb hsb = state.color;
-        hsb.b = abs(state.animation_step - 1200) / 12;
+static void zmk_rgb_underglow_effect_breathe(struct zmk_rgb_underglow_device_data * underglow_data) {
+    for (int i = 0; i < underglow_data->num_pixels; i++) {
+        struct zmk_led_hsb hsb = underglow_data->state.color;
+        hsb.b = abs(underglow_data->state.animation_step - 1200) / 12;
 
-        pixels[i] = hsb_to_rgb(hsb_scale_zero_max(hsb));
+        underglow_data->pixels[i] = hsb_to_rgb(hsb_scale_zero_max(hsb));
     }
 
-    state.animation_step += state.animation_speed * 10;
+    underglow_data->state.animation_step += underglow_data->state.animation_speed * 10;
 
-    if (state.animation_step > 2400) {
-        state.animation_step = 0;
+    if (underglow_data->state.animation_step > 2400) {
+        underglow_data->state.animation_step = 0;
     }
 }
 
-static void zmk_rgb_underglow_effect_spectrum() {
-    for (int i = 0; i < STRIP_NUM_PIXELS; i++) {
-        struct zmk_led_hsb hsb = state.color;
-        hsb.h = state.animation_step;
+static void zmk_rgb_underglow_effect_spectrum(struct zmk_rgb_underglow_device_data * underglow_data) {
+    for (int i = 0; i < underglow_data->num_pixels; i++) {
+        struct zmk_led_hsb hsb = underglow_data->state.color;
+        hsb.h = underglow_data->state.animation_step;
 
-        pixels[i] = hsb_to_rgb(hsb_scale_min_max(hsb));
+        underglow_data->pixels[i] = hsb_to_rgb(hsb_scale_min_max(hsb));
     }
 
-    state.animation_step += state.animation_speed;
-    state.animation_step = state.animation_step % HUE_MAX;
+    underglow_data->state.animation_step += underglow_data->state.animation_speed;
+    underglow_data->state.animation_step = underglow_data->state.animation_step % HUE_MAX;
 }
 
-static void zmk_rgb_underglow_effect_swirl() {
-    for (int i = 0; i < STRIP_NUM_PIXELS; i++) {
-        struct zmk_led_hsb hsb = state.color;
-        hsb.h = (HUE_MAX / STRIP_NUM_PIXELS * i + state.animation_step) % HUE_MAX;
+static void zmk_rgb_underglow_effect_swirl(struct zmk_rgb_underglow_device_data * underglow_data) {
+    for (int i = 0; i < underglow_data->num_pixels; i++) {
+        struct zmk_led_hsb hsb = underglow_data->state.color;
+        hsb.h = (HUE_MAX / underglow_data->num_pixels * i + underglow_data->state.animation_step) % HUE_MAX;
 
-        pixels[i] = hsb_to_rgb(hsb_scale_min_max(hsb));
+        underglow_data->pixels[i] = hsb_to_rgb(hsb_scale_min_max(hsb));
     }
 
-    state.animation_step += state.animation_speed * 2;
-    state.animation_step = state.animation_step % HUE_MAX;
+    underglow_data->state.animation_step += underglow_data->state.animation_speed * 2;
+    underglow_data->state.animation_step = underglow_data->state.animation_step % HUE_MAX;
 }
 
 static void zmk_rgb_underglow_tick(struct k_work *work) {
-    switch (state.current_effect) {
+    struct zmk_rgb_underglow_device_data * underglow_data =
+        CONTAINER_OF ( work, struct zmk_rgb_underglow_device_data, underglow_work);
+
+    switch (underglow_data->state.current_effect) {
     case UNDERGLOW_EFFECT_SOLID:
-        zmk_rgb_underglow_effect_solid();
+        zmk_rgb_underglow_effect_solid(underglow_data);
         break;
     case UNDERGLOW_EFFECT_BREATHE:
-        zmk_rgb_underglow_effect_breathe();
+        zmk_rgb_underglow_effect_breathe(underglow_data);
         break;
     case UNDERGLOW_EFFECT_SPECTRUM:
-        zmk_rgb_underglow_effect_spectrum();
+        zmk_rgb_underglow_effect_spectrum(underglow_data);
         break;
     case UNDERGLOW_EFFECT_SWIRL:
-        zmk_rgb_underglow_effect_swirl();
+        zmk_rgb_underglow_effect_swirl(underglow_data);
         break;
     }
 
-    #if IS_ENABLED(CONFIG_ZMK_APA_LED_STRIP)
-        apa_led_strip_update_rgb ( zmk_rgb_underglow_device,
-                                   pixels,
-                                   STRIP_NUM_PIXELS
-                                 );
-
-    #else
-        led_strip_update_rgb(led_strip, pixels, STRIP_NUM_PIXELS);
-    #endif
+    led_strip_update_rgb(underglow_data->led_strip, underglow_data->pixels, underglow_data->num_pixels);
 }
 
-K_WORK_DEFINE(underglow_work, zmk_rgb_underglow_tick);
-
 static void zmk_rgb_underglow_tick_handler(struct k_timer *timer) {
-    if (!state.on) {
+    struct zmk_rgb_underglow_device_data * underglow_data =
+        CONTAINER_OF ( timer, struct zmk_rgb_underglow_device_data, underglow_timer);
+
+    if (!underglow_data->state.on) {
         return;
     }
 
-    k_work_submit(&underglow_work);
+    k_work_submit(&underglow_data->underglow_work);
 }
-
-K_TIMER_DEFINE(underglow_tick, zmk_rgb_underglow_tick_handler, NULL);
 
 #if IS_ENABLED(CONFIG_SETTINGS)
 static int rgb_settings_set(const char *name, size_t len, settings_read_cb read_cb, void *cb_arg) {
+    struct zmk_rgb_underglow_device_data * underglow_data =
+        CONTAINER_OF ( name, struct zmk_rgb_underglow_device_data, settings_name);
+
     const char *next;
     int rc;
 
     if (settings_name_steq(name, "state", &next) && !next) {
-        if (len != sizeof(state)) {
+        if (len != sizeof(underglow_data->state)) {
             return -EINVAL;
         }
 
-        rc = read_cb(cb_arg, &state, sizeof(state));
+        rc = read_cb(cb_arg, &underglow_data->state, sizeof(underglow_data->state));
         if (rc >= 0) {
             return 0;
         }
@@ -231,55 +201,33 @@ static int rgb_settings_set(const char *name, size_t len, settings_read_cb read_
     return -ENOENT;
 }
 
-struct settings_handler rgb_conf = {.name = "rgb/underglow", .h_set = rgb_settings_set};
+static void zmk_rgb_underglow_save_state_work(struct k_work *work) {
+    struct k_delayed_work * p_k_delayed_work =
+        CONTAINER_OF ( work, struct k_delayed_work, work);
+    struct zmk_rgb_underglow_device_data * underglow_data =
+        CONTAINER_OF ( p_k_delayed_work, struct zmk_rgb_underglow_device_data, underglow_save_work);
+    char state_settings_name [48];
+    strcpy ( state_settings_name, underglow_data->settings_name );
+    strcat ( state_settings_name, "/state");
 
-static void zmk_rgb_underglow_save_state_work() {
-    settings_save_one("rgb/underglow/state", &state, sizeof(state));
+    settings_save_one(state_settings_name, &underglow_data->state, sizeof(underglow_data->state));
 }
 
-static struct k_delayed_work underglow_save_work;
 #endif
 
-#if IS_ENABLED(CONFIG_ZMK_APA_LED_STRIP)
+int zmk_rgb_underglow_init(const struct device *_arg) {
 
-    #define RGB_UNDERGLOW_DECL_CONFIG(inst)                                                                                                 \
-                extern struct rgb_underglow_config rgb_underglow_##inst##_config;
-
-    #define RGB_UNDERGLOW_INIT_CONFIG(inst)                                                                                                 \
-                rgb_underglow_##inst##_config.led_strip = device_get_binding(rgb_underglow_##inst##_config.led_strip_label);                \
-                if (rgb_underglow_##inst##_config.led_strip) {                                                                              \
-                    LOG_INF("Found LED strip device %s", rgb_underglow_##inst##_config.led_strip_label);                                    \
-                }                                                                                                                           \
-                else {                                                                                                                      \
-                    LOG_ERR("LED strip device %s not found", rgb_underglow_##inst##_config.led_strip_label);                                \
-                    return -EINVAL;                                                                                                         \
-                }
-
-    DT_INST_FOREACH_STATUS_OKAY(RGB_UNDERGLOW_DECL_CONFIG);
-#endif
-
-static int zmk_rgb_underglow_init(const struct device *_arg) {
-#if IS_ENABLED(CONFIG_ZMK_APA_LED_STRIP)
-    DT_INST_FOREACH_STATUS_OKAY(RGB_UNDERGLOW_INIT_CONFIG);
-    zmk_rgb_underglow_device = device_get_binding("RGB_UNDERGLOW");
-#endif
-
-    led_strip = device_get_binding(STRIP_LABEL);
-    if (led_strip) {
-        LOG_INF("Found LED strip device %s", STRIP_LABEL);
-    } else {
-        LOG_ERR("LED strip device %s not found", STRIP_LABEL);
-        return -EINVAL;
-    }
-
-#if IS_ENABLED(CONFIG_ZMK_RGB_UNDERGLOW_EXT_POWER)
+#if IS_ENABLED(CONFIG_ZMK_RGB_UNDERGLOW_EXT_POWER) && ! IS_ENABLED(CONFIG_ZMK_APA_LED_STRIP)
     ext_power = device_get_binding("EXT_POWER");
     if (ext_power == NULL) {
         LOG_ERR("Unable to retrieve ext_power device: EXT_POWER");
     }
 #endif
 
-    state = (struct rgb_underglow_state){
+    struct zmk_rgb_underglow_device_data * underglow_data =
+        (struct zmk_rgb_underglow_device_data *) _arg->data;
+
+    underglow_data->state = (struct rgb_underglow_state){
         color : {
             h : CONFIG_ZMK_RGB_UNDERGLOW_HUE_START,
             s : CONFIG_ZMK_RGB_UNDERGLOW_SAT_START,
@@ -291,47 +239,44 @@ static int zmk_rgb_underglow_init(const struct device *_arg) {
         on : IS_ENABLED(CONFIG_ZMK_RGB_UNDERGLOW_ON_START)
     };
 
-#if IS_ENABLED(CONFIG_SETTINGS)
-    settings_subsys_init();
+    #if IS_ENABLED(CONFIG_SETTINGS)
+        underglow_data->rgb_conf.name = underglow_data->settings_name; //"_xxx";
+        underglow_data->rgb_conf.h_set = rgb_settings_set;
+        settings_subsys_init();
 
-    int err = settings_register(&rgb_conf);
-    if (err) {
-        LOG_ERR("Failed to register the ext_power settings handler (err %d)", err);
-        return err;
-    }
+        int err = settings_register(&underglow_data->rgb_conf);
+        if (err) {
+            LOG_ERR("Failed to register the settings handler (err %d)", err);
+            return err;
+        }
 
-    k_delayed_work_init(&underglow_save_work, zmk_rgb_underglow_save_state_work);
+        k_delayed_work_init(&underglow_data->underglow_save_work, zmk_rgb_underglow_save_state_work);
 
-    settings_load_subtree("rgb/underglow");
-#endif
+        settings_load_subtree(underglow_data->settings_name);
+    #endif
 
-    k_timer_start(&underglow_tick, K_NO_WAIT, K_MSEC(50));
+    k_timer_start(&underglow_data->underglow_timer, K_NO_WAIT, K_MSEC(50));
 
     return 0;
 }
 
-int zmk_rgb_underglow_save_state() {
+int zmk_rgb_underglow_save_state(struct zmk_rgb_underglow_device_data * underglow_data) {
 #if IS_ENABLED(CONFIG_SETTINGS)
-    k_delayed_work_cancel(&underglow_save_work);
-    return k_delayed_work_submit(&underglow_save_work, K_MSEC(CONFIG_ZMK_SETTINGS_SAVE_DEBOUNCE));
+    k_delayed_work_cancel(&underglow_data->underglow_save_work);
+    return k_delayed_work_submit(&underglow_data->underglow_save_work, K_MSEC(CONFIG_ZMK_SETTINGS_SAVE_DEBOUNCE));
 #else
     return 0;
 #endif
 }
 
-int zmk_rgb_underglow_get_state(bool *on_off) {
-    if (!led_strip)
-        return -ENODEV;
-
-    *on_off = state.on;
+int zmk_rgb_underglow_get_state(struct zmk_rgb_underglow_device_data * underglow_data, bool *on_off) {
+    *on_off = underglow_data->state.on;
     return 0;
 }
 
-int zmk_rgb_underglow_on() {
-    if (!led_strip)
-        return -ENODEV;
+int zmk_rgb_underglow_on(struct zmk_rgb_underglow_device_data * underglow_data) {
 
-#if IS_ENABLED(CONFIG_ZMK_RGB_UNDERGLOW_EXT_POWER)
+#if IS_ENABLED(CONFIG_ZMK_RGB_UNDERGLOW_EXT_POWER) && ! IS_ENABLED(CONFIG_ZMK_APA_LED_STRIP)
     if (ext_power != NULL) {
         int rc = ext_power_enable(ext_power);
         if (rc != 0) {
@@ -340,84 +285,61 @@ int zmk_rgb_underglow_on() {
     }
 #endif
 
-    state.on = true;
-    state.animation_step = 0;
-    k_timer_start(&underglow_tick, K_NO_WAIT, K_MSEC(50));
+    underglow_data->state.on = true;
+    underglow_data->state.animation_step = 0;
+    k_timer_start(&underglow_data->underglow_timer, K_NO_WAIT, K_MSEC(50));
 
-    return zmk_rgb_underglow_save_state();
+    return zmk_rgb_underglow_save_state(underglow_data);
 }
 
-int zmk_rgb_underglow_off() {
-    if (!led_strip)
-        return -ENODEV;
-
-    #if IS_ENABLED(CONFIG_ZMK_RGB_UNDERGLOW_EXT_POWER)
-        #if IS_ENABLED(CONFIG_ZMK_APA_LED_STRIP)
-            if (ext_power != NULL &&
-                ( ( struct rgb_underglow_config * ) zmk_rgb_underglow_device->config)->num_points == 0 ) {
-                // underglow behavior has been called without a led strip subset, so all pixels are affected
-                int rc = ext_power_disable(ext_power);
-                if (rc != 0) {
-                    LOG_ERR("Unable to disable EXT_POWER: %d", rc);
-                }
+int zmk_rgb_underglow_off(struct zmk_rgb_underglow_device_data * underglow_data) {
+    #if IS_ENABLED(CONFIG_ZMK_RGB_UNDERGLOW_EXT_POWER) && ! IS_ENABLED(CONFIG_ZMK_APA_LED_STRIP)
+        if (ext_power != NULL) {
+            int rc = ext_power_disable(ext_power);
+            if (rc != 0) {
+                LOG_ERR("Unable to disable EXT_POWER: %d", rc);
             }
-        #else
-            if (ext_power != NULL) {
-                int rc = ext_power_disable(ext_power);
-                if (rc != 0) {
-                    LOG_ERR("Unable to disable EXT_POWER: %d", rc);
-                }
-            }
-        #endif
+        }
     #endif
 
-    for (int i = 0; i < STRIP_NUM_PIXELS; i++) {
-        pixels[i] = (struct led_rgb){r : 0, g : 0, b : 0};
+    for (int i = 0; i < underglow_data->num_pixels; i++) {
+        underglow_data->pixels[i] = (struct led_rgb){r : 0, g : 0, b : 0};
     }
 
-    #if IS_ENABLED(CONFIG_ZMK_APA_LED_STRIP)
-        apa_led_strip_update_rgb (  zmk_rgb_underglow_device,
-                                    pixels,
-                                    STRIP_NUM_PIXELS
-                                 );
-    #else
-        led_strip_update_rgb(led_strip, pixels, STRIP_NUM_PIXELS);
-    #endif
+    led_strip_update_rgb(underglow_data->led_strip, underglow_data->pixels, underglow_data->num_pixels);
 
-    k_timer_stop(&underglow_tick);
-    state.on = false;
+    k_timer_stop(&underglow_data->underglow_timer);
+    underglow_data->state.on = false;
 
-    return zmk_rgb_underglow_save_state();
+    return zmk_rgb_underglow_save_state(underglow_data);
 }
 
-int zmk_rgb_underglow_cycle_effect(int direction) {
-    if (!led_strip)
-        return -ENODEV;
+int zmk_rgb_underglow_cycle_effect(struct zmk_rgb_underglow_device_data * underglow_data, int direction) {
 
-    state.current_effect += UNDERGLOW_EFFECT_NUMBER + direction;
-    state.current_effect %= UNDERGLOW_EFFECT_NUMBER;
+    underglow_data->state.current_effect += UNDERGLOW_EFFECT_NUMBER + direction;
+    underglow_data->state.current_effect %= UNDERGLOW_EFFECT_NUMBER;
 
-    state.animation_step = 0;
+    underglow_data->state.animation_step = 0;
 
-    return zmk_rgb_underglow_save_state();
+    return zmk_rgb_underglow_save_state(underglow_data);
 }
 
-int zmk_rgb_underglow_toggle() {
-    return state.on ? zmk_rgb_underglow_off() : zmk_rgb_underglow_on();
+int zmk_rgb_underglow_toggle(struct zmk_rgb_underglow_device_data * underglow_data) {
+    return underglow_data->state.on ? zmk_rgb_underglow_off(underglow_data) : zmk_rgb_underglow_on(underglow_data);
 }
 
-int zmk_rgb_underglow_set_hsb(struct zmk_led_hsb color) {
+int zmk_rgb_underglow_set_hsb(struct zmk_rgb_underglow_device_data * underglow_data, struct zmk_led_hsb color) {
     if (color.h > HUE_MAX || color.s > SAT_MAX || color.b > BRT_MAX) {
         return -ENOTSUP;
     }
 
-    state.color = color;
+    underglow_data->state.color = color;
 
     return 0;
 }
 
-struct zmk_led_hsb zmk_rgb_underglow_calc_hue(int direction) {
-    struct zmk_led_hsb color = state.color;
+struct zmk_led_hsb zmk_rgb_underglow_calc_hue(struct zmk_rgb_underglow_device_data * underglow_data, int direction) {
+    struct zmk_led_hsb color = underglow_data->state.color;
 
     color.h += HUE_MAX + (direction * CONFIG_ZMK_RGB_UNDERGLOW_HUE_STEP);
     color.h %= HUE_MAX;
@@ -425,8 +347,8 @@ struct zmk_led_hsb zmk_rgb_underglow_calc_hue(int direction) {
     return color;
 }
 
-struct zmk_led_hsb zmk_rgb_underglow_calc_sat(int direction) {
-    struct zmk_led_hsb color = state.color;
+struct zmk_led_hsb zmk_rgb_underglow_calc_sat(struct zmk_rgb_underglow_device_data * underglow_data, int direction) {
+    struct zmk_led_hsb color = underglow_data->state.color;
 
     int s = color.s + (direction * CONFIG_ZMK_RGB_UNDERGLOW_SAT_STEP);
     if (s < 0) {
@@ -439,8 +361,8 @@ struct zmk_led_hsb zmk_rgb_underglow_calc_sat(int direction) {
     return color;
 }
 
-struct zmk_led_hsb zmk_rgb_underglow_calc_brt(int direction) {
-    struct zmk_led_hsb color = state.color;
+struct zmk_led_hsb zmk_rgb_underglow_calc_brt(struct zmk_rgb_underglow_device_data * underglow_data, int direction) {
+    struct zmk_led_hsb color = underglow_data->state.color;
 
     int b = color.b + (direction * CONFIG_ZMK_RGB_UNDERGLOW_BRT_STEP);
     color.b = CLAMP(b, 0, BRT_MAX);
@@ -448,48 +370,36 @@ struct zmk_led_hsb zmk_rgb_underglow_calc_brt(int direction) {
     return color;
 }
 
-int zmk_rgb_underglow_change_hue(int direction) {
-    if (!led_strip)
-        return -ENODEV;
+int zmk_rgb_underglow_change_hue(struct zmk_rgb_underglow_device_data * underglow_data, int direction) {
+    underglow_data->state.color = zmk_rgb_underglow_calc_hue(underglow_data, direction);
 
-    state.color = zmk_rgb_underglow_calc_hue(direction);
-
-    return zmk_rgb_underglow_save_state();
+    return zmk_rgb_underglow_save_state(underglow_data);
 }
 
-int zmk_rgb_underglow_change_sat(int direction) {
-    if (!led_strip)
-        return -ENODEV;
+int zmk_rgb_underglow_change_sat(struct zmk_rgb_underglow_device_data * underglow_data, int direction) {
+    underglow_data->state.color = zmk_rgb_underglow_calc_sat(underglow_data, direction);
 
-    state.color = zmk_rgb_underglow_calc_sat(direction);
-
-    return zmk_rgb_underglow_save_state();
+    return zmk_rgb_underglow_save_state(underglow_data);
 }
 
-int zmk_rgb_underglow_change_brt(int direction) {
-    if (!led_strip)
-        return -ENODEV;
+int zmk_rgb_underglow_change_brt(struct zmk_rgb_underglow_device_data * underglow_data, int direction) {
+    underglow_data->state.color = zmk_rgb_underglow_calc_brt(underglow_data, direction);
 
-    state.color = zmk_rgb_underglow_calc_brt(direction);
-
-    return zmk_rgb_underglow_save_state();
+    return zmk_rgb_underglow_save_state(underglow_data);
 }
 
-int zmk_rgb_underglow_change_spd(int direction) {
-    if (!led_strip)
-        return -ENODEV;
-
-    if (state.animation_speed == 1 && direction < 0) {
+int zmk_rgb_underglow_change_spd(struct zmk_rgb_underglow_device_data * underglow_data, int direction) {
+    if (underglow_data->state.animation_speed == 1 && direction < 0) {
         return 0;
     }
 
-    state.animation_speed += direction;
+    underglow_data->state.animation_speed += direction;
 
-    if (state.animation_speed > 5) {
-        state.animation_speed = 5;
+    if (underglow_data->state.animation_speed > 5) {
+        underglow_data->state.animation_speed = 5;
     }
 
-    return zmk_rgb_underglow_save_state();
+    return zmk_rgb_underglow_save_state(underglow_data);
 }
 
-SYS_INIT(zmk_rgb_underglow_init, APPLICATION, CONFIG_APPLICATION_INIT_PRIORITY);
+//SYS_INIT(zmk_rgb_underglow_init, APPLICATION, CONFIG_APPLICATION_INIT_PRIORITY);

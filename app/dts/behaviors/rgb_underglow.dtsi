@@ -11,17 +11,5 @@
 			label = "RGB_UNDERGLOW";
 			#binding-cells = <2>;
 		};
-		/omit-if-no-ref/ rgb_ug_caps: behavior_rgb_underglow_caps {
-			compatible = "zmk,behavior-rgb-underglow";
-			label = "RGB_UNDERGLOW_CAPS";
-			#binding-cells = <2>;
-			led-strip = <&caps_lock>;
-		};
-		/omit-if-no-ref/ rgb_ug_nlc: behavior_rgb_underglow_num_lock {
-			compatible = "zmk,behavior-rgb-underglow";
-			label = "RGB_UNDERGLOW_NUM_LOCK";
-			#binding-cells = <2>;
-			led-strip = <&num_lock>;
-		};
 	};
 };

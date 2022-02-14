@@ -3,7 +3,7 @@
 
 description: All Point Addressable LEDs Strip
 
-compatible: "zmk,apa-led-strip"
+compatible: "zmk,apa-led-strip-subs"
 
 properties:
 
@@ -12,7 +12,8 @@ properties:
     required: true
     description: compatible strings
 
-  led-strip:
-    type: phandle
+  points:
+    type: uint8-array
     required: true
-    description: The actual led-strip physical device
+    description: |
+      Array of led indices of the underlying led_strip affected by this device

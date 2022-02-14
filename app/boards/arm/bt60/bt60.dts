@@ -97,18 +97,42 @@
 	};
 };
 
-/ {	ls_subs: led-strip-subsets {
-
-		caps_lock: apa-led-strip-caps-lock {
-			compatible = "zmk,apa-led-strip";
-			points = [00 02 04];
-			led-strip = <&led_strip>;
+/ {
+	behaviors {
+		/omit-if-no-ref/ rgb_ug_caps: behavior_rgb_underglow_caps {
+			compatible = "zmk,behavior-rgb-underglow";
+			label = "RGB_UNDERGLOW_CAPS";
+			#binding-cells = <2>;
+			led-strip = <&caps_lock>;
 		};
+		/omit-if-no-ref/ rgb_ug_nlc: behavior_rgb_underglow_num_lock {
+			compatible = "zmk,behavior-rgb-underglow";
+			label = "RGB_UNDERGLOW_NUM_LOCK";
+			#binding-cells = <2>;
+			led-strip = <&num_lock>;
+		};
+	};
+};
 
-		num_lock: apa-led-strip-lalt-num-lock {
+/ {	ls_devs: led-strip-devices {
+	    led_strip_ws2812 {
 			compatible = "zmk,apa-led-strip";
-			points = [01 03 05 0A 0B];
 			led-strip = <&led_strip>;
+
+			caps_lock: apa-led-strip-caps-lock {
+				compatible = "zmk,apa-led-strip-subs";
+				points = [00 02 04];
+			};
+
+			num_lock: apa-led-strip-lalt-num-lock {
+				compatible = "zmk,apa-led-strip-subs";
+				points = [01 03 05 0A 0B];
+			};
+
+			ug_all: apa-led-strip-all {
+				compatible = "zmk,apa-led-strip-subs";
+				points = [00 01 02 03 04 05 06 07 08 09 0A 0B];
+			};
 		};
 	};
 };
