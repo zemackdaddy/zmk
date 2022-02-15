@@ -255,8 +255,9 @@ int zmk_rgb_underglow_init(const struct device *_arg) {
         settings_load_subtree(underglow_data->settings_name);
     #endif
 
-    k_timer_start(&underglow_data->underglow_timer, K_NO_WAIT, K_MSEC(50));
+    k_work_init(&underglow_data->underglow_work, zmk_rgb_underglow_tick);
 
+    k_timer_init(&underglow_data->underglow_timer, zmk_rgb_underglow_tick_handler, NULL);
     return 0;
 }
 

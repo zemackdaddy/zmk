@@ -13,7 +13,7 @@ extern "C" {
 typedef int (*apa_led_api_update_rgb)(const struct device *dev,
 				  struct led_rgb *pixels,
 				  size_t num_pixels,
-				  uint8_t * points,
+				  const uint8_t * points,
 				  uint8_t num_points
 		          );
 
