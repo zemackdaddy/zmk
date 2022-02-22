@@ -43,7 +43,7 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 #define SAT_MAX 100
 #define BRT_MAX 100
 
-#define LED_BRIGHTNESS 100
+#define LED_BRIGHTNESS 75
 
 BUILD_ASSERT(CONFIG_ZMK_RGB_UNDERGLOW_BRT_MIN <= CONFIG_ZMK_RGB_UNDERGLOW_BRT_MAX,
              "ERROR: RGB underglow maximum brightness is less than minimum brightness");
@@ -740,6 +740,12 @@ static int rgb_underglow_event_listener(const zmk_event_t *eh) {
 
 #if IS_ENABLED(CONFIG_ZMK_RGB_UNDERGLOW_AUTO_OFF_USB)
     if (as_zmk_usb_conn_state_changed(eh)) {
+        led_data.indicators = zmk_led_indicators_get_current_flags();
+        led_data.layer = zmk_keymap_highest_layer_active();
+        int err = zmk_split_bt_update_led(&led_data);
+        if (err) {
+            LOG_ERR("send failed (err %d)", err);
+        }
         static bool prev_state = false;
         return rgb_underglow_auto_state(&prev_state, zmk_usb_is_powered());
     }
