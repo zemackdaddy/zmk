@@ -43,6 +43,8 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 #define SAT_MAX 100
 #define BRT_MAX 100
 
+#define LED_BRIGHTNESS 100
+
 BUILD_ASSERT(CONFIG_ZMK_RGB_UNDERGLOW_BRT_MIN <= CONFIG_ZMK_RGB_UNDERGLOW_BRT_MAX,
              "ERROR: RGB underglow maximum brightness is less than minimum brightness");
 
@@ -202,29 +204,29 @@ static void zmk_rgb_underglow_effect_kinesis() {
     led_data.indicators = zmk_led_indicators_get_current_flags();
     led_data.layer = zmk_keymap_highest_layer_active();
 
-    pixels[0].r = (led_data.indicators & BIT(LED_CAPSLOCK)) * 127;
-    pixels[0].g = (led_data.indicators & BIT(LED_CAPSLOCK)) * 127;
-    pixels[0].b = (led_data.indicators & BIT(LED_CAPSLOCK)) * 127;
+    pixels[0].r = (led_data.indicators & BIT(LED_CAPSLOCK)) * LED_BRIGHTNESS;
+    pixels[0].g = (led_data.indicators & BIT(LED_CAPSLOCK)) * LED_BRIGHTNESS;
+    pixels[0].b = (led_data.indicators & BIT(LED_CAPSLOCK)) * LED_BRIGHTNESS;
     // set second led as bluetooth state
     switch (zmk_ble_active_profile_index()) {
     case 0:
-        pixels[1].r = 127;
-        pixels[1].g = 127;
-        pixels[1].b = 127;
+        pixels[1].r = LED_BRIGHTNESS;
+        pixels[1].g = LED_BRIGHTNESS;
+        pixels[1].b = LED_BRIGHTNESS;
         break;
     case 1:
         pixels[1].r = 0;
         pixels[1].g = 0;
-        pixels[1].b = 127;
+        pixels[1].b = LED_BRIGHTNESS;
         break;
     case 2:
-        pixels[1].r = 127;
+        pixels[1].r = LED_BRIGHTNESS;
         pixels[1].g = 0;
         pixels[1].b = 0;
         break;
     case 3:
         pixels[1].r = 0;
-        pixels[1].g = 127;
+        pixels[1].g = LED_BRIGHTNESS;
         pixels[1].b = 0;
         break;
     }
@@ -256,38 +258,38 @@ static void zmk_rgb_underglow_effect_kinesis() {
         pixels[2].b = 0;
         break;
     case 1:
-        pixels[2].r = 127;
-        pixels[2].g = 127;
-        pixels[2].b = 127;
+        pixels[2].r = LED_BRIGHTNESS;
+        pixels[2].g = LED_BRIGHTNESS;
+        pixels[2].b = LED_BRIGHTNESS;
         break;
     case 2:
         pixels[2].r = 0;
         pixels[2].g = 0;
-        pixels[2].b = 127;
+        pixels[2].b = LED_BRIGHTNESS;
         break;
     case 3:
         pixels[2].r = 0;
-        pixels[2].g = 127;
+        pixels[2].g = LED_BRIGHTNESS;
         pixels[2].b = 0;
         break;
     case 4:
-        pixels[2].r = 127;
+        pixels[2].r = LED_BRIGHTNESS;
         pixels[2].g = 0;
         pixels[2].b = 0;
         break;
     case 5:
-        pixels[2].r = 127;
+        pixels[2].r = LED_BRIGHTNESS;
         pixels[2].g = 0;
-        pixels[2].b = 127;
+        pixels[2].b = LED_BRIGHTNESS;
         break;
     case 6:
         pixels[2].r = 0;
-        pixels[2].g = 127;
-        pixels[2].b = 127;
+        pixels[2].g = LED_BRIGHTNESS;
+        pixels[2].b = LED_BRIGHTNESS;
         break;
     case 7:
-        pixels[2].r = 127;
-        pixels[2].g = 127;
+        pixels[2].r = LED_BRIGHTNESS;
+        pixels[2].g = LED_BRIGHTNESS;
         pixels[2].b = 0;
         break;
     default:
@@ -305,13 +307,13 @@ static void zmk_rgb_underglow_effect_kinesis() {
 #else
     // leds for peripheral(right) side
     if (zmk_ble_active_profile_is_open()) {
-        pixels[0].r = 127 * last_ble_state[0];
+        pixels[0].r = LED_BRIGHTNESS * last_ble_state[0];
         pixels[0].g = 0;
         pixels[0].b = 0;
-        pixels[1].r = 127 * last_ble_state[0];
+        pixels[1].r = LED_BRIGHTNESS * last_ble_state[0];
         pixels[1].g = 0;
         pixels[1].b = 0;
-        pixels[2].r = 127 * last_ble_state[0];
+        pixels[2].r = LED_BRIGHTNESS * last_ble_state[0];
         pixels[2].g = 0;
         pixels[2].b = 0;
         if (state.animation_step > 3) {
@@ -320,13 +322,13 @@ static void zmk_rgb_underglow_effect_kinesis() {
         }
         state.animation_step++;
     } else if (!zmk_ble_active_profile_is_connected()) {
-        pixels[0].r = 127 * last_ble_state[1];
+        pixels[0].r = LED_BRIGHTNESS * last_ble_state[1];
         pixels[0].g = 0;
         pixels[0].b = 0;
-        pixels[1].r = 127 * last_ble_state[1];
+        pixels[1].r = LED_BRIGHTNESS * last_ble_state[1];
         pixels[1].g = 0;
         pixels[1].b = 0;
-        pixels[2].r = 127 * last_ble_state[1];
+        pixels[2].r = LED_BRIGHTNESS * last_ble_state[1];
         pixels[2].g = 0;
         pixels[2].b = 0;
         if (state.animation_step > 14) {
@@ -336,59 +338,59 @@ static void zmk_rgb_underglow_effect_kinesis() {
         state.animation_step++;
     } else {
         // set first led as LED_NUMLOCK
-        pixels[2].r = (led_data.indicators & BIT(LED_NUMLOCK)) * 127;
-        pixels[2].g = (led_data.indicators & BIT(LED_NUMLOCK)) * 127;
-        pixels[2].b = (led_data.indicators & BIT(LED_NUMLOCK)) * 127;
+        pixels[2].r = (led_data.indicators & BIT(LED_NUMLOCK)) * LED_BRIGHTNESS;
+        pixels[2].g = (led_data.indicators & BIT(LED_NUMLOCK)) * LED_BRIGHTNESS;
+        pixels[2].b = (led_data.indicators & BIT(LED_NUMLOCK)) * LED_BRIGHTNESS;
         // set second led as scroll Lock
-        pixels[1].r = (led_data.indicators & BIT(LED_SCROLLLOCK)) * 127;
-        pixels[1].g = (led_data.indicators & BIT(LED_SCROLLLOCK)) * 127;
-        pixels[1].b = (led_data.indicators & BIT(LED_SCROLLLOCK)) * 127;
+        pixels[1].r = (led_data.indicators & BIT(LED_SCROLLLOCK)) * LED_BRIGHTNESS;
+        pixels[1].g = (led_data.indicators & BIT(LED_SCROLLLOCK)) * LED_BRIGHTNESS;
+        pixels[1].b = (led_data.indicators & BIT(LED_SCROLLLOCK)) * LED_BRIGHTNESS;
         // set third led as layer
         switch (led_data.layer) {
           case 0:
-              pixels[2].r = 0;
-              pixels[2].g = 0;
-              pixels[2].b = 0;
+              pixels[0].r = 0;
+              pixels[0].g = 0;
+              pixels[0].b = 0;
               break;
           case 1:
-              pixels[2].r = 127;
-              pixels[2].g = 127;
-              pixels[2].b = 127;
+              pixels[0].r = LED_BRIGHTNESS;
+              pixels[0].g = LED_BRIGHTNESS;
+              pixels[0].b = LED_BRIGHTNESS;
               break;
           case 2:
-              pixels[2].r = 0;
-              pixels[2].g = 0;
-              pixels[2].b = 127;
+              pixels[0].r = 0;
+              pixels[0].g = 0;
+              pixels[0].b = LED_BRIGHTNESS;
               break;
           case 3:
-              pixels[2].r = 0;
-              pixels[2].g = 127;
-              pixels[2].b = 0;
+              pixels[0].r = 0;
+              pixels[0].g = LED_BRIGHTNESS;
+              pixels[0].b = 0;
               break;
           case 4:
-              pixels[2].r = 127;
-              pixels[2].g = 0;
-              pixels[2].b = 0;
+              pixels[0].r = LED_BRIGHTNESS;
+              pixels[0].g = 0;
+              pixels[0].b = 0;
               break;
           case 5:
-              pixels[2].r = 127;
-              pixels[2].g = 0;
-              pixels[2].b = 127;
+              pixels[0].r = LED_BRIGHTNESS;
+              pixels[0].g = 0;
+              pixels[0].b = LED_BRIGHTNESS;
               break;
           case 6:
-              pixels[2].r = 0;
-              pixels[2].g = 127;
-              pixels[2].b = 127;
+              pixels[0].r = 0;
+              pixels[0].g = LED_BRIGHTNESS;
+              pixels[0].b = LED_BRIGHTNESS;
               break;
           case 7:
-              pixels[2].r = 127;
-              pixels[2].g = 127;
-              pixels[2].b = 0;
+              pixels[0].r = LED_BRIGHTNESS;
+              pixels[0].g = LED_BRIGHTNESS;
+              pixels[0].b = 0;
               break;
           default:
-              pixels[2].r = 0;
-              pixels[2].g = 0;
-              pixels[2].b = 0;
+              pixels[0].r = 0;
+              pixels[0].g = 0;
+              pixels[0].b = 0;
               break;
           }
     }
