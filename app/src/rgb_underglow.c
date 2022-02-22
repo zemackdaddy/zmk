@@ -345,32 +345,52 @@ static void zmk_rgb_underglow_effect_kinesis() {
         pixels[1].b = (led_data.indicators & BIT(LED_SCROLLLOCK)) * 127;
         // set third led as layer
         switch (led_data.layer) {
-        case 0:
-            pixels[0].r = 127;
-            pixels[0].g = 127;
-            pixels[0].b = 127;
-            break;
-        case 1:
-            pixels[0].r = 0;
-            pixels[0].g = 0;
-            pixels[0].b = 127;
-            break;
-        case 2:
-            pixels[0].r = 127;
-            pixels[0].g = 0;
-            pixels[0].b = 0;
-            break;
-        case 3:
-            pixels[0].r = 0;
-            pixels[0].g = 127;
-            pixels[0].b = 0;
-            break;
-        default:
-            pixels[0].r = 0;
-            pixels[0].g = 0;
-            pixels[0].b = 0;
-            break;
-        }
+          case 0:
+              pixels[2].r = 0;
+              pixels[2].g = 0;
+              pixels[2].b = 0;
+              break;
+          case 1:
+              pixels[2].r = 127;
+              pixels[2].g = 127;
+              pixels[2].b = 127;
+              break;
+          case 2:
+              pixels[2].r = 0;
+              pixels[2].g = 0;
+              pixels[2].b = 127;
+              break;
+          case 3:
+              pixels[2].r = 0;
+              pixels[2].g = 127;
+              pixels[2].b = 0;
+              break;
+          case 4:
+              pixels[2].r = 127;
+              pixels[2].g = 0;
+              pixels[2].b = 0;
+              break;
+          case 5:
+              pixels[2].r = 127;
+              pixels[2].g = 0;
+              pixels[2].b = 127;
+              break;
+          case 6:
+              pixels[2].r = 0;
+              pixels[2].g = 127;
+              pixels[2].b = 127;
+              break;
+          case 7:
+              pixels[2].r = 127;
+              pixels[2].g = 127;
+              pixels[2].b = 0;
+              break;
+          default:
+              pixels[2].r = 0;
+              pixels[2].g = 0;
+              pixels[2].b = 0;
+              break;
+          }
     }
 #endif
 }
