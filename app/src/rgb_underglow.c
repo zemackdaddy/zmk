@@ -512,7 +512,7 @@ static int zmk_rgb_underglow_init(const struct device *_arg) {
         LOG_ERR("Failed to register the ext_power settings handler (err %d)", err);
         return err;
     }
-
+    led_data.indicators = 0;
     k_delayed_work_init(&underglow_save_work, zmk_rgb_underglow_save_state_work);
 
     settings_load_subtree("rgb/underglow");
