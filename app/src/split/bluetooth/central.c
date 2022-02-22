@@ -507,7 +507,7 @@ void split_central_split_run_callback(struct k_work *work) {
 
     while (k_msgq_get(&zmk_split_central_split_run_msgq, &payload_wrapper, K_NO_WAIT) == 0) {
         if (peripherals[payload_wrapper.source].state != PERIPHERAL_SLOT_STATE_CONNECTED) {
-            LOG_ERR("Source not connected");
+            LOG_ERR("Source not connected %d", payload_wrapper.source);
             continue;
         }
 
