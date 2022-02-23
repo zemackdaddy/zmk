@@ -108,7 +108,7 @@ static ssize_t write_hids_output_report(struct bt_conn *conn, const struct bt_ga
 
     struct zmk_host_report_source source = {
         .endpoint = ZMK_ENDPOINT_BLE,
-        .profile = bt_conn_index(conn),
+        .profile = zmk_ble_active_profile_index(),
     };
 
     zmk_host_process_led_report(led_report, source);

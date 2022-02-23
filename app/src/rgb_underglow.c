@@ -25,6 +25,7 @@
 #include <zmk/events/activity_state_changed.h>
 #include <zmk/events/usb_conn_state_changed.h>
 #include <zmk/events/led_indicator_changed.h>
+#include <zmk/events/peripheral_state_changed.h>
 #include <dt-bindings/zmk/led_indicators.h>
 #include <zmk/ble.h>
 #include <zmk/battery.h>
@@ -75,6 +76,8 @@ static struct rgb_underglow_state state;
 static struct zmk_periph_led led_data;
 
 static bool last_ble_state[2];
+
+static bool force_update;
 
 #if ZMK_BLE_IS_CENTRAL
 static struct zmk_periph_led old_led_data;
@@ -298,11 +301,12 @@ static void zmk_rgb_underglow_effect_kinesis() {
         pixels[2].b = 0;
         break;
     }
-    if (old_led_data.layer != led_data.layer || old_led_data.indicators != led_data.indicators) {
+    if (old_led_data.layer != led_data.layer || old_led_data.indicators != led_data.indicators || force_update) {
         int err = zmk_split_bt_update_led(&led_data);
         if (err) {
             LOG_ERR("send failed (err %d)", err);
         }
+        force_update = false;
     }
 #else
     // leds for peripheral(right) side
@@ -714,6 +718,8 @@ int zmk_rgb_underglow_change_spd(int direction) {
     return zmk_rgb_underglow_save_state();
 }
 
+#if ZMK_BLE_IS_CENTRAL
+
 #if IS_ENABLED(CONFIG_ZMK_RGB_UNDERGLOW_AUTO_OFF_IDLE) ||                                          \
     IS_ENABLED(CONFIG_ZMK_RGB_UNDERGLOW_AUTO_OFF_USB)
 static int rgb_underglow_auto_state(bool *prev_state, bool new_state) {
@@ -750,7 +756,10 @@ static int rgb_underglow_event_listener(const zmk_event_t *eh) {
         return rgb_underglow_auto_state(&prev_state, zmk_usb_is_powered());
     }
 #endif
-
+    if (as_zmk_peripheral_state_changed(eh)) {
+      //force_update = true;
+      return 0;
+    }
     return -ENOTSUP;
 }
 
@@ -764,6 +773,8 @@ ZMK_SUBSCRIPTION(rgb_underglow, zmk_activity_state_changed);
 
 #if IS_ENABLED(CONFIG_ZMK_RGB_UNDERGLOW_AUTO_OFF_USB)
 ZMK_SUBSCRIPTION(rgb_underglow, zmk_usb_conn_state_changed);
+#endif
+ZMK_SUBSCRIPTION(rgb_underglow, zmk_peripheral_state_changed);
 #endif
 
 SYS_INIT(zmk_rgb_underglow_init, APPLICATION, CONFIG_APPLICATION_INIT_PRIORITY);

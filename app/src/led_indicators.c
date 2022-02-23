@@ -73,24 +73,13 @@ SYS_INIT(zmk_led_indicators_init, APPLICATION, CONFIG_APPLICATION_INIT_PRIORITY)
 
 static zmk_led_indicators_flags_t led_flags[NUM_PROFILES];
 
-static size_t led_source_index(struct zmk_host_report_source source) {
-    switch (source.endpoint) {
-    case ZMK_ENDPOINT_USB:
-        return 0;
-    case ZMK_ENDPOINT_BLE:
-        return NUM_USB_PROFILES + source.profile;
-    }
-
-    CODE_UNREACHABLE;
-}
-
 zmk_led_indicators_flags_t zmk_led_indicators_get_current_flags() {
     struct zmk_host_report_source source = zmk_host_current_source();
     return zmk_led_indicators_get_flags(source);
 }
 
 zmk_led_indicators_flags_t zmk_led_indicators_get_flags(struct zmk_host_report_source source) {
-    size_t index = led_source_index(source);
+    size_t index = source.profile + source.endpoint == ZMK_ENDPOINT_BLE;
     return led_flags[index];
 }
 
@@ -107,7 +96,7 @@ static K_WORK_DEFINE(led_changed_work, raise_led_changed_event);
 
 void zmk_led_indicators_update_flags(zmk_led_indicators_flags_t leds,
                                      struct zmk_host_report_source source) {
-    size_t index = led_source_index(source);
+    size_t index = source.profile + source.endpoint == ZMK_ENDPOINT_BLE;
     led_flags[index] = leds;
 
     k_work_submit(&led_changed_work);
