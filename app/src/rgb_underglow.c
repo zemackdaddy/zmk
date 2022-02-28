@@ -44,7 +44,7 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 #define SAT_MAX 100
 #define BRT_MAX 100
 
-#define LED_BRIGHTNESS 75
+#define LED_BRIGHTNESS 30
 
 BUILD_ASSERT(CONFIG_ZMK_RGB_UNDERGLOW_BRT_MIN <= CONFIG_ZMK_RGB_UNDERGLOW_BRT_MAX,
              "ERROR: RGB underglow maximum brightness is less than minimum brightness");
@@ -77,10 +77,12 @@ static struct zmk_periph_led led_data;
 
 static bool last_ble_state[2];
 
-static bool force_update;
 
 #if ZMK_BLE_IS_CENTRAL
 static struct zmk_periph_led old_led_data;
+
+static bool force_update;
+
 #endif
 
 #if IS_ENABLED(CONFIG_ZMK_RGB_UNDERGLOW_EXT_POWER)
@@ -757,8 +759,9 @@ static int rgb_underglow_event_listener(const zmk_event_t *eh) {
 #endif
 #if ZMK_BLE_IS_CENTRAL
     if (as_zmk_peripheral_state_changed(eh)) {
-        // force_update = true;
-        return 0;
+      LOG_DBG("event clled");
+      //force_update = true;
+      return 0;
     }
     return -ENOTSUP;
 #endif

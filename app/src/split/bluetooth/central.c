@@ -337,8 +337,6 @@ static void split_central_process_connection(struct bt_conn *conn) {
     LOG_DBG("New connection params: Interval: %d, Latency: %d, PHY: %d", info.le.interval,
             info.le.latency, info.le.phy->rx_phy);
 
-    ZMK_EVENT_RAISE(new_zmk_peripheral_state_changed(
-        (struct zmk_peripheral_state_changed){.state = true}));
 }
 
 static bool split_central_eir_found(struct bt_data *data, void *user_data) {
@@ -472,6 +470,9 @@ static void split_central_connected(struct bt_conn *conn, uint8_t conn_err) {
 
     confirm_peripheral_slot_conn(conn);
     split_central_process_connection(conn);
+
+    ZMK_EVENT_RAISE(new_zmk_peripheral_state_changed(
+       (struct zmk_peripheral_state_changed){.state = true}));
 }
 
 static void split_central_disconnected(struct bt_conn *conn, uint8_t reason) {
