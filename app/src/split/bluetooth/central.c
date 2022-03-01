@@ -411,6 +411,8 @@ static bool split_central_eir_found(struct bt_data *data, void *user_data) {
             } else {
                 param = BT_LE_CONN_PARAM(0x0006, 0x0006, 30, 400);
 
+                LOG_DBG("Initiating new connnection");
+
                 err = bt_conn_le_create(addr, BT_CONN_LE_CREATE_CONN, param, &slot->conn);
                 if (err) {
                     LOG_ERR("Create conn failed (err %d) (create conn? 0x%04x)", err,
@@ -461,8 +463,16 @@ static int start_scan(void) {
 
 static void split_central_connected(struct bt_conn *conn, uint8_t conn_err) {
     char addr[BT_ADDR_LE_STR_LEN];
+    struct bt_conn_info info;
 
     bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
+
+    bt_conn_get_info(conn, &info);
+
+    if (info.role != BT_CONN_ROLE_CENTRAL) {
+        LOG_DBG("SKIPPING FOR ROLE %d", info.role);
+        return;
+    }
 
     if (conn_err) {
         LOG_ERR("Failed to connect to %s (%u)", log_strdup(addr), conn_err);
@@ -484,6 +494,7 @@ static void split_central_connected(struct bt_conn *conn, uint8_t conn_err) {
 
 static void split_central_disconnected(struct bt_conn *conn, uint8_t reason) {
     char addr[BT_ADDR_LE_STR_LEN];
+    int err;
 
     bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
 
@@ -491,11 +502,18 @@ static void split_central_disconnected(struct bt_conn *conn, uint8_t reason) {
     ZMK_EVENT_RAISE(new_zmk_peripheral_state_changed((struct zmk_peripheral_state_changed){.state = false}));
     release_peripheral_slot_for_conn(conn);
 
+    err = release_peripheral_slot_for_conn(conn);
+
+    if (err < 0) {
+        return;
+    }
+
     start_scan();
 }
 
 static struct bt_conn_cb conn_callbacks = {
-    .connected = split_central_connected, .disconnected = split_central_disconnected,
+    .connected = split_central_connected,
+    .disconnected = split_central_disconnected,
 };
 
 K_THREAD_STACK_DEFINE(split_central_split_run_q_stack,
@@ -568,8 +586,12 @@ int zmk_split_bt_invoke_behavior(uint8_t source, struct zmk_behavior_binding *bi
                                                          .position = event.position,
                                                          .state = state ? 1 : 0,
                                                      }};
-    strncpy(payload.behavior_dev, binding->behavior_dev, ZMK_SPLIT_RUN_BEHAVIOR_DEV_LEN - 1);
-    payload.behavior_dev[ZMK_SPLIT_RUN_BEHAVIOR_DEV_LEN - 1] = '\0';
+    const size_t payload_dev_size = sizeof(payload.behavior_dev);
+    if (strlcpy(payload.behavior_dev, binding->behavior_dev, payload_dev_size) >=
+        payload_dev_size) {
+        LOG_ERR("Truncated behavior label %s to %s before invoking peripheral behavior",
+                log_strdup(binding->behavior_dev), log_strdup(payload.behavior_dev));
+    }
 
     struct zmk_split_run_behavior_payload_wrapper wrapper = {.source = source, .payload = payload};
     return split_bt_invoke_behavior_payload(wrapper);
