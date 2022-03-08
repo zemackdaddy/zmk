@@ -80,9 +80,6 @@ static bool last_ble_state[2];
 
 #if ZMK_BLE_IS_CENTRAL
 static struct zmk_periph_led old_led_data;
-
-static bool force_update;
-
 #endif
 
 #if IS_ENABLED(CONFIG_ZMK_RGB_UNDERGLOW_EXT_POWER)
@@ -200,6 +197,17 @@ static void zmk_rgb_underglow_effect_swirl() {
     state.animation_step = state.animation_step % HUE_MAX;
 }
 
+#if ZMK_BLE_IS_CENTRAL
+static struct k_delayed_work led_update_work;
+
+static void zmk_rgb_underglow_central_send() {
+    int err = zmk_split_bt_update_led(&led_data);
+        if (err) {
+            LOG_ERR("send failed (err %d)", err);
+    }
+}
+#endif
+
 static void zmk_rgb_underglow_effect_kinesis() {
 #if ZMK_BLE_IS_CENTRAL
     // leds for central(left) side
@@ -303,13 +311,8 @@ static void zmk_rgb_underglow_effect_kinesis() {
         pixels[2].b = 0;
         break;
     }
-    if (old_led_data.layer != led_data.layer || old_led_data.indicators != led_data.indicators ||
-        force_update) {
-        int err = zmk_split_bt_update_led(&led_data);
-        if (err) {
-            LOG_ERR("send failed (err %d)", err);
-        }
-        force_update = false;
+    if (old_led_data.layer != led_data.layer || old_led_data.indicators != led_data.indicators) {
+        zmk_rgb_underglow_central_send();
     }
 #else
     // leds for peripheral(right) side
@@ -546,6 +549,9 @@ static int zmk_rgb_underglow_init(const struct device *_arg) {
 
     settings_load_subtree("rgb/underglow");
 #endif
+#if ZMK_BLE_IS_CENTRAL
+    k_delayed_work_init(&led_update_work, zmk_rgb_underglow_central_send);
+#endif
 
     zmk_rgb_underglow_save_state();
     k_work_submit(&underglow_work);
@@ -759,12 +765,12 @@ static int rgb_underglow_event_listener(const zmk_event_t *eh) {
 #endif
 #if ZMK_BLE_IS_CENTRAL
     if (as_zmk_peripheral_state_changed(eh)) {
-      LOG_DBG("event clled");
-      //force_update = true;
-      return 0;
+      LOG_DBG("event called");
+
+      return k_delayed_work_submit(&led_update_work, K_MSEC(2000));;
     }
-    return -ENOTSUP;
 #endif
+    return -ENOTSUP;
 }
 
 ZMK_LISTENER(rgb_underglow, rgb_underglow_event_listener);
