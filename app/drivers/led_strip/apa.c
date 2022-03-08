@@ -16,14 +16,24 @@
 #include <logging/log.h>
 
 #include <drivers/led_strip.h>
-#include <drivers/apa.h>
 
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
 #define DT_DRV_COMPAT zmk_apa_led_strip
 
-#if IS_ENABLED(CONFIG_ZMK_APA_LED_STRIP)
 #if DT_HAS_COMPAT_STATUS_OKAY(DT_DRV_COMPAT)
+
+typedef int (*apa_led_api_update_rgb)(const struct device *dev,
+				  struct led_rgb *pixels,
+				  size_t num_pixels,
+				  const uint8_t * points,
+				  uint8_t num_points
+		          );
+
+struct apa_led_strip_driver_api {
+	apa_led_api_update_rgb update_rgb;
+};
+
 
 struct apa_led_strip_data {
     struct led_rgb * pixels_buffer;
@@ -39,9 +49,8 @@ static int apa_led_strip_update_rgb (  const struct device * apa_device,
     struct apa_led_strip_data * apa_data = (struct apa_led_strip_data * ) apa_device->data;
     const struct led_strip_driver_api *api =
 		(const struct led_strip_driver_api *)apa_data->led_strip->api;
-    int pixel_index ;
 
-    for ( pixel_index = 0;
+    for ( int pixel_index = 0;
         pixel_index < num_pixels && pixel_index < num_points;
         pixel_index ++ ) {
         if ( points[pixel_index] < apa_data->num_pixels ) {
@@ -86,7 +95,7 @@ static int apa_led_strip_subs_update_rgb ( const struct device * dev,
 				                size_t num_pixels ) {
     const struct apa_led_strip_subs_config_data * cfg_data = (const struct apa_led_strip_subs_config_data *) dev->config;
     const struct device * apa_dev = cfg_data->apa_led_strip;
-    const struct apa_led_strip_driver_api * api = (const struct apa_led_strip_driver_api * )dev->api;
+    const struct apa_led_strip_driver_api * api = (const struct apa_led_strip_driver_api * )apa_dev->api;
     return api->update_rgb(apa_dev, pixels, num_pixels, cfg_data->points, cfg_data->num_of_points);
 }
 
@@ -123,7 +132,6 @@ DT_INST_FOREACH_STATUS_OKAY(RGB_APA_LED_STRIP_SUBS_INIT);
 
 
 #endif /* DT_HAS_COMPAT_STATUS_OKAY(DT_DRV_COMPAT) */
-#endif /* IS_ENABLED(CONFIG_ZMK_APA_LED_STRIP) */
 /**
  * @}
  */

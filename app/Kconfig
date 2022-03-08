@@ -317,11 +317,6 @@ config ZMK_RGB_UNDERGLOW_ON_START
 	bool "RGB underglow starts on by default"
 	default y
 
-config ZMK_APA_LED_STRIP
-	bool "All Point Addressable Led Strip"
-	select LED_STRIP
-	default y
-
 #ZMK_RGB_UNDERGLOW
 endif
 

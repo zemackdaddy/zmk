@@ -1,0 +1,9 @@
+# Copyright (c) 2020 Phytec Messtechnik GmbH, Peter Johanson
+# SPDX-License-Identifier: Apache-2.0
+
+# apa led strip configuration options
+
+config ZMK_APA_LED_STRIP
+	bool "All Point Addressable Led Strip"
+	select LED_STRIP
+	default y
