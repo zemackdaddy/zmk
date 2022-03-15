@@ -19,6 +19,12 @@
 #include <zmk/event_manager.h>
 #include <zmk/events/activity_state_changed.h>
 #include <zmk/events/usb_conn_state_changed.h>
+#include <zmk/events/peripheral_state_changed.h>
+
+#if ZMK_BLE_IS_CENTRAL
+#include <zmk/split/bluetooth/central.h>
+#endif
+
 
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
@@ -33,11 +39,6 @@ static const struct device *const backlight_dev = DEVICE_DT_GET(DT_CHOSEN(zmk_ba
 #define BACKLIGHT_NUM_LEDS (DT_NUM_CHILD(DT_CHOSEN(zmk_backlight)))
 
 #define BRT_MAX 100
-
-struct backlight_state {
-    uint8_t brightness;
-    bool on;
-};
 
 static struct backlight_state state = {.brightness = CONFIG_ZMK_BACKLIGHT_BRT_START,
                                        .on = IS_ENABLED(CONFIG_ZMK_BACKLIGHT_ON_START)};
@@ -55,6 +56,17 @@ static int zmk_backlight_update() {
     }
     return 0;
 }
+
+#if ZMK_BLE_IS_CENTRAL
+static struct k_delayed_work bl_update_work;
+
+static void zmk_backlight_central_send() {
+    int err = zmk_split_bt_update_bl(&state);
+        if (err) {
+            LOG_ERR("send failed (err %d)", err);
+    }
+}
+#endif
 
 #if IS_ENABLED(CONFIG_SETTINGS)
 static int backlight_settings_load_cb(const char *name, size_t len, settings_read_cb read_cb,
@@ -91,7 +103,9 @@ static int zmk_backlight_init(const struct device *_arg) {
         LOG_ERR("Failed to load backlight settings: %d", rc);
     }
 #endif
-
+#if ZMK_BLE_IS_CENTRAL
+    k_delayed_work_init(&bl_update_work, zmk_backlight_central_send);
+#endif
     return zmk_backlight_update();
 }
 
@@ -117,6 +131,12 @@ int zmk_backlight_on() {
 
 int zmk_backlight_off() {
     state.on = false;
+    return zmk_backlight_update_and_save();
+}
+
+int zmk_backlight_update_vals(struct backlight_state new_state) {
+    state.on = new_state.on;
+    state.brightness = new_state.brightness;
     return zmk_backlight_update_and_save();
 }
 
@@ -170,7 +190,13 @@ static int backlight_event_listener(const zmk_event_t *eh) {
         return backlight_auto_state(&prev_state, zmk_usb_is_powered());
     }
 #endif
+#if ZMK_BLE_IS_CENTRAL
+    if (as_zmk_peripheral_state_changed(eh)) {
+      LOG_DBG("event called");
 
+      return k_delayed_work_submit(&bl_update_work, K_MSEC(2000));
+    }
+#endif
     return -ENOTSUP;
 }
 
@@ -184,6 +210,10 @@ ZMK_SUBSCRIPTION(backlight, zmk_activity_state_changed);
 
 #if IS_ENABLED(CONFIG_ZMK_BACKLIGHT_AUTO_OFF_USB)
 ZMK_SUBSCRIPTION(backlight, zmk_usb_conn_state_changed);
+#endif
+
+#if ZMK_BLE_IS_CENTRAL
+ZMK_SUBSCRIPTION(backlight, zmk_peripheral_state_changed);
 #endif
 
 SYS_INIT(zmk_backlight_init, APPLICATION, CONFIG_APPLICATION_INIT_PRIORITY);

@@ -25,5 +25,10 @@ struct zmk_split_update_led_data {
     uint8_t indicators;
 } __packed;
 
+struct zmk_split_update_bl_data {
+    uint8_t brightness;
+    bool on;
+} __packed;
+
 int zmk_split_bt_position_pressed(uint8_t position);
 int zmk_split_bt_position_released(uint8_t position);
