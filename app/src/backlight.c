@@ -16,6 +16,7 @@
 #include <zmk/activity.h>
 #include <zmk/backlight.h>
 #include <zmk/usb.h>
+#include <zmk/ble.h>
 #include <zmk/event_manager.h>
 #include <zmk/events/activity_state_changed.h>
 #include <zmk/events/usb_conn_state_changed.h>
@@ -42,7 +43,22 @@ static const struct device *const backlight_dev = DEVICE_DT_GET(DT_CHOSEN(zmk_ba
 static struct backlight_state state = {.brightness = CONFIG_ZMK_BACKLIGHT_BRT_START,
                                        .on = IS_ENABLED(CONFIG_ZMK_BACKLIGHT_ON_START)};
 
+#if ZMK_BLE_IS_CENTRAL
+static struct k_delayed_work bl_update_work;
+
+static void zmk_backlight_central_send() {
+    //#if IS_ENABLED(CONFIG_ZMK_BACKLIGHT_AUTO_OFF_IDLE)
+    //    state.on = state.on || (!state.on && (zmk_activity_get_state() == ZMK_ACTIVITY_IDLE);
+    //#endif
+    int err = zmk_split_bt_update_bl(&state);
+    if (err) {
+        LOG_ERR("send failed (err %d)", err);
+    }
+}
+#endif
+
 static int zmk_backlight_update() {
+    zmk_backlight_central_send();
     uint8_t brt = zmk_backlight_get_brt();
     LOG_DBG("Update backlight brightness: %d%%", brt);
 
@@ -56,16 +72,7 @@ static int zmk_backlight_update() {
     return 0;
 }
 
-#if ZMK_BLE_IS_CENTRAL
-static struct k_delayed_work bl_update_work;
 
-static void zmk_backlight_central_send() {
-    int err = zmk_split_bt_update_bl(&state);
-    if (err) {
-        LOG_ERR("send failed (err %d)", err);
-    }
-}
-#endif
 
 #if IS_ENABLED(CONFIG_SETTINGS)
 static int backlight_settings_load_cb(const char *name, size_t len, settings_read_cb read_cb,
@@ -192,8 +199,12 @@ static int backlight_event_listener(const zmk_event_t *eh) {
 #if ZMK_BLE_IS_CENTRAL
     if (as_zmk_peripheral_state_changed(eh)) {
         LOG_DBG("event called");
-
-        return k_delayed_work_submit(&bl_update_work, K_MSEC(2000));
+        const struct zmk_peripheral_state_changed *ev;
+        ev = as_zmk_peripheral_state_changed(eh);
+        if(ev->state)
+            return k_delayed_work_submit(&bl_update_work, K_MSEC(2500));
+        else
+            return k_delayed_work_cancel(&bl_update_work);
     }
 #endif
     return -ENOTSUP;

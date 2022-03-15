@@ -765,9 +765,12 @@ static int rgb_underglow_event_listener(const zmk_event_t *eh) {
 #if ZMK_BLE_IS_CENTRAL
     if (as_zmk_peripheral_state_changed(eh)) {
         LOG_DBG("event called");
-
-        return k_delayed_work_submit(&led_update_work, K_MSEC(2000));
-        ;
+        const struct zmk_peripheral_state_changed *ev;
+        ev = as_zmk_peripheral_state_changed(eh);
+        if(ev->state)
+            return k_delayed_work_submit(&led_update_work, K_MSEC(2500));
+        else
+            return k_delayed_work_cancel(&led_update_work);
     }
 #endif
     return -ENOTSUP;

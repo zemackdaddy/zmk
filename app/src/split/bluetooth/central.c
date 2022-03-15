@@ -265,7 +265,7 @@ static uint8_t split_central_chrc_discovery_func(struct bt_conn *conn,
         LOG_DBG("Found update bl handle");
         slot->update_bl_handle = bt_gatt_attr_value_handle(attr);
     }
-
+    
     bool subscribed = (slot->update_bl_handle && slot->update_led_handle &&
                        slot->run_behavior_handle && slot->subscribe_params.value_handle);
 
@@ -299,7 +299,7 @@ static uint8_t split_central_service_discovery_func(struct bt_conn *conn,
     slot->discover_params.func = split_central_chrc_discovery_func;
     slot->discover_params.start_handle = attr->handle + 1;
     slot->discover_params.type = BT_GATT_DISCOVER_CHARACTERISTIC;
-
+    
     int err = bt_gatt_discover(conn, &slot->discover_params);
     if (err) {
         LOG_ERR("Failed to start discovering split service characteristics (err %d)", err);
@@ -488,8 +488,7 @@ static void split_central_disconnected(struct bt_conn *conn, uint8_t reason) {
     bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
 
     LOG_DBG("Disconnected: %s (reason %d)", log_strdup(addr), reason);
-    // ZMK_EVENT_RAISE(new_zmk_peripheral_state_changed(
-    //    (struct zmk_peripheral_state_changed){.state = false}));
+    ZMK_EVENT_RAISE(new_zmk_peripheral_state_changed((struct zmk_peripheral_state_changed){.state = false}));
     release_peripheral_slot_for_conn(conn);
 
     start_scan();

@@ -259,7 +259,7 @@ void send_consumer_report_callback(struct k_work *work) {
         }
 
         struct bt_gatt_notify_params notify_params = {
-            .attr = &hog_svc.attrs[10],
+            .attr = &hog_svc.attrs[12],
             .data = &report,
             .len = sizeof(report),
         };
