@@ -25,7 +25,6 @@
 #include <zmk/split/bluetooth/central.h>
 #endif
 
-
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
 BUILD_ASSERT(DT_HAS_CHOSEN(zmk_backlight),
@@ -62,8 +61,8 @@ static struct k_delayed_work bl_update_work;
 
 static void zmk_backlight_central_send() {
     int err = zmk_split_bt_update_bl(&state);
-        if (err) {
-            LOG_ERR("send failed (err %d)", err);
+    if (err) {
+        LOG_ERR("send failed (err %d)", err);
     }
 }
 #endif
@@ -192,9 +191,9 @@ static int backlight_event_listener(const zmk_event_t *eh) {
 #endif
 #if ZMK_BLE_IS_CENTRAL
     if (as_zmk_peripheral_state_changed(eh)) {
-      LOG_DBG("event called");
+        LOG_DBG("event called");
 
-      return k_delayed_work_submit(&bl_update_work, K_MSEC(2000));
+        return k_delayed_work_submit(&bl_update_work, K_MSEC(2000));
     }
 #endif
     return -ENOTSUP;

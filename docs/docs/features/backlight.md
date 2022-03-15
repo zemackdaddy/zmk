@@ -40,11 +40,18 @@ values={[
 ]}>
 <TabItem value="board">
 
-First, you must enable PWM by adding the following lines to your `.conf` file:
+First, you must enable PWM by adding the following lines to your `Kconfig.defconfig` file:
 
 ```
-CONFIG_PWM=y
-CONFIG_LED_PWM=y
+if ZMK_BACKLIGHT
+
+config PWM
+    default y
+
+config LED_PWM
+    default y
+
+endif # ZMK_BACKLIGHT
 ```
 
 Then you have to add the following lines to your `.dts` file:
@@ -98,16 +105,23 @@ Finally you need to add backlight to the `chosen` element of the root devicetree
 </TabItem>
 <TabItem value="shield">
 
-First, you must enable PWM by adding the following lines to your `.conf` file:
+You must first add a `boards/` directory within your shield folder. For each board that supports the shield you must create a `<board>.defconfig` file and a `<board>.overlay` file inside the `boards/` folder.
+
+Inside your `<board>.defconfig` file, add the following lines:
 
 ```
-CONFIG_PWM=y
-CONFIG_LED_PWM=y
+if ZMK_BACKLIGHT
+
+config PWM
+    default y
+
+config LED_PWM
+    default y
+
+endif # ZMK_BACKLIGHT
 ```
 
-Then you must add a `boards/` directory within your shield folder. For each board that supports the shield you must create a `<board>.overlay` file inside the `boards/` folder.
-
-Inside your `.overlay` file, add the following lines:
+Then add the following lines to your `.overlay` file:
 
 ```
 &pwm0 {

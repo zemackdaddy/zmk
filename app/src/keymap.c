@@ -205,7 +205,7 @@ int zmk_keymap_apply_position_state(uint8_t source, int layer, uint32_t position
         return invoke_locally(&binding, event, pressed);
     case BEHAVIOR_LOCALITY_EVENT_SOURCE:
 #if ZMK_BLE_IS_CENTRAL
-        if (source == 255) {
+        if (source == ZMK_POSITION_STATE_CHANGE_SOURCE_LOCAL) {
             return invoke_locally(&binding, event, pressed);
         } else {
             return zmk_split_bt_invoke_behavior(source, &binding, event, pressed);

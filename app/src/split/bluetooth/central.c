@@ -17,6 +17,7 @@
 
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
+#include <zmk/stdlib.h>
 #include <zmk/ble.h>
 #include <zmk/behavior.h>
 #include <zmk/rgb_underglow.h>
@@ -105,6 +106,7 @@ int release_peripheral_slot(int index) {
     slot->subscribe_params.value_handle = 0;
     slot->run_behavior_handle = 0;
     slot->update_led_handle = 0;
+    slot->update_bl_handle = 0;
 
     return 0;
 }
@@ -264,8 +266,8 @@ static uint8_t split_central_chrc_discovery_func(struct bt_conn *conn,
         slot->update_bl_handle = bt_gatt_attr_value_handle(attr);
     }
 
-    bool subscribed = (slot->update_bl_handle && slot->update_led_handle && slot->run_behavior_handle &&
-                       slot->subscribe_params.value_handle);
+    bool subscribed = (slot->update_bl_handle && slot->update_led_handle &&
+                       slot->run_behavior_handle && slot->subscribe_params.value_handle);
 
     return subscribed ? BT_GATT_ITER_STOP : BT_GATT_ITER_CONTINUE;
 }
@@ -342,7 +344,6 @@ static void split_central_process_connection(struct bt_conn *conn) {
 
     LOG_DBG("New connection params: Interval: %d, Latency: %d, PHY: %d", info.le.interval,
             info.le.latency, info.le.phy->rx_phy);
-
 }
 
 static bool split_central_eir_found(struct bt_data *data, void *user_data) {
@@ -477,8 +478,8 @@ static void split_central_connected(struct bt_conn *conn, uint8_t conn_err) {
     confirm_peripheral_slot_conn(conn);
     split_central_process_connection(conn);
 
-    ZMK_EVENT_RAISE(new_zmk_peripheral_state_changed(
-       (struct zmk_peripheral_state_changed){.state = true}));
+    ZMK_EVENT_RAISE(
+        new_zmk_peripheral_state_changed((struct zmk_peripheral_state_changed){.state = true}));
 }
 
 static void split_central_disconnected(struct bt_conn *conn, uint8_t reason) {
@@ -487,7 +488,7 @@ static void split_central_disconnected(struct bt_conn *conn, uint8_t reason) {
     bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
 
     LOG_DBG("Disconnected: %s (reason %d)", log_strdup(addr), reason);
-    //ZMK_EVENT_RAISE(new_zmk_peripheral_state_changed(
+    // ZMK_EVENT_RAISE(new_zmk_peripheral_state_changed(
     //    (struct zmk_peripheral_state_changed){.state = false}));
     release_peripheral_slot_for_conn(conn);
 
@@ -586,7 +587,6 @@ K_MSGQ_DEFINE(zmk_split_central_split_led_msgq, sizeof(struct zmk_split_update_l
 void split_central_split_led_callback(struct k_work *work) {
     struct zmk_split_update_led_data payload;
 
-
     while (k_msgq_get(&zmk_split_central_split_led_msgq, &payload, K_NO_WAIT) == 0) {
         if (peripherals[0].state != PERIPHERAL_SLOT_STATE_CONNECTED) {
             LOG_ERR("Source not connected");
@@ -646,16 +646,15 @@ K_MSGQ_DEFINE(zmk_split_central_split_bl_msgq, sizeof(struct zmk_split_update_bl
 void split_central_split_bl_callback(struct k_work *work) {
     struct zmk_split_update_bl_data payload;
 
-
     while (k_msgq_get(&zmk_split_central_split_bl_msgq, &payload, K_NO_WAIT) == 0) {
         if (peripherals[0].state != PERIPHERAL_SLOT_STATE_CONNECTED) {
             LOG_ERR("Source not connected");
             continue;
         }
 
-        int err = bt_gatt_write_without_response(peripherals[0].conn,
-                                                 peripherals[0].update_bl_handle, &payload,
-                                                 sizeof(struct zmk_split_update_bl_data), true);
+        int err =
+            bt_gatt_write_without_response(peripherals[0].conn, peripherals[0].update_bl_handle,
+                                           &payload, sizeof(struct zmk_split_update_bl_data), true);
 
         if (err) {
             LOG_ERR("Failed to write the update bl characteristic (err %d)", err);
@@ -689,8 +688,7 @@ static int split_bt_update_bl_payload(struct zmk_split_update_bl_data payload) {
 };
 
 int zmk_split_bt_update_bl(struct backlight_state *periph) {
-    struct zmk_split_update_bl_data payload = {.brightness = periph->brightness,
-                                                .on = periph->on};
+    struct zmk_split_update_bl_data payload = {.brightness = periph->brightness, .on = periph->on};
 
     return split_bt_update_bl_payload(payload);
 }

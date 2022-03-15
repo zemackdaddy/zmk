@@ -77,7 +77,6 @@ static struct zmk_periph_led led_data;
 
 static bool last_ble_state[2];
 
-
 #if ZMK_BLE_IS_CENTRAL
 static struct zmk_periph_led old_led_data;
 #endif
@@ -202,8 +201,8 @@ static struct k_delayed_work led_update_work;
 
 static void zmk_rgb_underglow_central_send() {
     int err = zmk_split_bt_update_led(&led_data);
-        if (err) {
-            LOG_ERR("send failed (err %d)", err);
+    if (err) {
+        LOG_ERR("send failed (err %d)", err);
     }
 }
 #endif
@@ -765,9 +764,10 @@ static int rgb_underglow_event_listener(const zmk_event_t *eh) {
 #endif
 #if ZMK_BLE_IS_CENTRAL
     if (as_zmk_peripheral_state_changed(eh)) {
-      LOG_DBG("event called");
+        LOG_DBG("event called");
 
-      return k_delayed_work_submit(&led_update_work, K_MSEC(2000));;
+        return k_delayed_work_submit(&led_update_work, K_MSEC(2000));
+        ;
     }
 #endif
     return -ENOTSUP;

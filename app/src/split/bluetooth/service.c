@@ -55,15 +55,17 @@ static ssize_t split_svc_run_behavior(struct bt_conn *conn, const struct bt_gatt
     // We run if:
     // 1: We've gotten all the position/state/param data.
     // 2: We have a null terminated string for the behavior device label.
+    const size_t behavior_dev_offset =
+        offsetof(struct zmk_split_run_behavior_payload, behavior_dev);
     if ((end_addr > sizeof(struct zmk_split_run_behavior_data)) &&
-        payload->behavior_dev[end_addr - sizeof(struct zmk_split_run_behavior_data) - 1] == '\0') {
+        payload->behavior_dev[end_addr - behavior_dev_offset - 1] == '\0') {
         struct zmk_behavior_binding binding = {
             .param1 = payload->data.param1,
             .param2 = payload->data.param2,
             .behavior_dev = payload->behavior_dev,
         };
-        LOG_DBG("INVOKE THE BEHAVIOR: %s with params %d %d", log_strdup(binding.behavior_dev),
-                binding.param1, binding.param2);
+        LOG_DBG("%s with params %d %d: pressed? %d", log_strdup(binding.behavior_dev),
+                binding.param1, binding.param2, payload->data.state);
         struct zmk_behavior_binding_event event = {.position = payload->data.position,
                                                    .timestamp = k_uptime_get()};
         int err;
@@ -103,7 +105,7 @@ static ssize_t split_svc_update_led(struct bt_conn *conn, const struct bt_gatt_a
 }
 
 static ssize_t split_svc_update_bl(struct bt_conn *conn, const struct bt_gatt_attr *attrs,
-                                    const void *buf, uint16_t len, uint16_t offset, uint8_t flags) {
+                                   const void *buf, uint16_t len, uint16_t offset, uint8_t flags) {
     struct zmk_split_update_bl_data *payload = attrs->user_data;
     uint16_t end_addr = offset + len;
 
