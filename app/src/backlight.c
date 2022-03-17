@@ -58,7 +58,9 @@ static void zmk_backlight_central_send() {
 #endif
 
 static int zmk_backlight_update() {
-    zmk_backlight_central_send();
+    #if ZMK_BLE_IS_CENTRAL
+        zmk_backlight_central_send();
+    #endif
     uint8_t brt = zmk_backlight_get_brt();
     LOG_DBG("Update backlight brightness: %d%%", brt);
 
