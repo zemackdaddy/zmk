@@ -383,7 +383,7 @@ static void connected(struct bt_conn *conn, uint8_t err) {
 
     bt_conn_get_info(conn, &info);
 
-    if (info.role != BT_CONN_ROLE_PERIPHERAL) {
+    if (info.role != BT_CONN_ROLE_SLAVE) {
         LOG_DBG("SKIPPING FOR ROLE %d", info.role);
         return;
     }
@@ -430,7 +430,7 @@ static void disconnected(struct bt_conn *conn, uint8_t reason) {
 
     bt_conn_get_info(conn, &info);
 
-    if (info.role != BT_CONN_ROLE_PERIPHERAL) {
+    if (info.role != BT_CONN_ROLE_SLAVE) {
         LOG_DBG("SKIPPING FOR ROLE %d", info.role);
         return;
     }

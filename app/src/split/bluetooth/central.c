@@ -469,7 +469,7 @@ static void split_central_connected(struct bt_conn *conn, uint8_t conn_err) {
 
     bt_conn_get_info(conn, &info);
 
-    if (info.role != BT_CONN_ROLE_CENTRAL) {
+    if (info.role != BT_CONN_ROLE_MASTER) {
         LOG_DBG("SKIPPING FOR ROLE %d", info.role);
         return;
     }
