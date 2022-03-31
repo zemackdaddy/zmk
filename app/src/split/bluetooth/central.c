@@ -65,7 +65,6 @@ int peripheral_slot_index_for_conn(struct bt_conn *conn) {
             return i;
         }
     }
-
     return -EINVAL;
 }
 
@@ -500,11 +499,11 @@ static void split_central_disconnected(struct bt_conn *conn, uint8_t reason) {
 
     LOG_DBG("Disconnected: %s (reason %d)", log_strdup(addr), reason);
     ZMK_EVENT_RAISE(new_zmk_peripheral_state_changed((struct zmk_peripheral_state_changed){.state = false}));
-    release_peripheral_slot_for_conn(conn);
 
     err = release_peripheral_slot_for_conn(conn);
 
     if (err < 0) {
+        LOG_DBG("Error encountered in releasing slot %d", err);
         return;
     }
 
