@@ -56,6 +56,7 @@ enum rgb_underglow_effect {
     UNDERGLOW_EFFECT_SWIRL,
     UNDERGLOW_EFFECT_KINESIS,
     UNDERGLOW_EFFECT_BATTERY,
+    UNDERGLOW_EFFECT_TEST,
     UNDERGLOW_EFFECT_NUMBER // Used to track number of underglow effects
 };
 
@@ -76,6 +77,8 @@ static struct rgb_underglow_state state;
 static struct zmk_periph_led led_data;
 
 static bool last_ble_state[2];
+
+static bool triggered;
 
 #if ZMK_BLE_IS_CENTRAL
 static struct zmk_periph_led old_led_data;
@@ -406,6 +409,63 @@ static void zmk_rgb_underglow_effect_kinesis() {
 #endif
 }
 
+static void zmk_rgb_underglow_effect_test() {
+    triggered = true;
+    struct led_rgb rgb;
+    rgb.r = 0;
+    rgb.g = 0;
+    rgb.b = 0;
+    
+    for (int i = 0; i < STRIP_NUM_PIXELS; i++) {
+        struct zmk_led_hsb hsb = state.color;
+        hsb.h = state.animation_step;
+
+        pixels[i] = hsb_to_rgb(hsb_scale_min_max(hsb));
+    }
+    if (state.animation_step < (HUE_MAX * 3)) {
+        struct zmk_led_hsb hsb = state.color;
+        hsb.h = state.animation_step;
+        rgb.r = 0;
+
+        pixels[0] = rgb;
+        pixels[1] = rgb;
+        pixels[2] = hsb_to_rgb(hsb_scale_min_max(hsb));
+    }
+    if (state.animation_step < (HUE_MAX * 2)) {
+        struct zmk_led_hsb hsb = state.color;
+        hsb.h = state.animation_step - HUE_MAX;
+        rgb.r = 0;
+        rgb.g = 0;
+        rgb.b = 0;
+        pixels[0] = rgb;
+        pixels[1] = hsb_to_rgb(hsb_scale_min_max(hsb));
+        pixels[2] = rgb;
+    }
+    if (state.animation_step < HUE_MAX) {
+        struct zmk_led_hsb hsb = state.color;
+        hsb.h = state.animation_step;
+        rgb.r = 0;
+        rgb.g = 0;
+        rgb.b = 0;
+        pixels[0] = hsb_to_rgb(hsb_scale_min_max(hsb));
+        pixels[1] = rgb;
+        pixels[2] = rgb;
+    }
+    
+    
+
+    state.animation_step += 20;
+    if (state.animation_step > (HUE_MAX * 3)) {
+        
+        rgb.r = 255;
+        rgb.g = 255;
+        rgb.b = 255;
+        for (int i = 0; i < STRIP_NUM_PIXELS; i++)
+            pixels[i] = rgb;
+    }
+
+}
+
 static void zmk_rgb_underglow_effect_battery() {
     uint8_t soc = zmk_battery_state_of_charge();
     struct led_rgb rgb;
@@ -450,6 +510,9 @@ static void zmk_rgb_underglow_tick(struct k_work *work) {
         break;
     case UNDERGLOW_EFFECT_BATTERY:
         zmk_rgb_underglow_effect_battery();
+        break;
+    case UNDERGLOW_EFFECT_TEST:
+        zmk_rgb_underglow_effect_test();
         break;
     }
 
@@ -556,6 +619,7 @@ static int zmk_rgb_underglow_init(const struct device *_arg) {
     k_work_submit(&underglow_work);
     zmk_rgb_underglow_off();
     zmk_rgb_underglow_on();
+    triggered = false;
 
     return 0;
 }
