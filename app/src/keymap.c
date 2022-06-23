@@ -52,8 +52,8 @@ static uint8_t _zmk_keymap_layer_default = 0;
 #define SENSOR_LAYER(node)                                                                         \
     COND_CODE_1(                                                                                   \
         DT_NODE_HAS_PROP(node, sensor_bindings),                                                   \
-        ({UTIL_LISTIFY(DT_PROP_LEN(node, sensor_bindings), _TRANSFORM_SENSOR_ENTRY, node)}), ({})) \
-    ,
+        ({UTIL_LISTIFY(DT_PROP_LEN(node, sensor_bindings), _TRANSFORM_SENSOR_ENTRY, node)}),       \
+        ({})),
 
 #endif /* ZMK_KEYMAP_HAS_SENSORS */
 
@@ -195,7 +195,9 @@ int zmk_keymap_apply_position_state(uint8_t source, int layer, uint32_t position
     struct zmk_behavior_binding binding = zmk_keymap[layer][position];
     const struct device *behavior;
     struct zmk_behavior_binding_event event = {
-        .layer = layer, .position = position, .timestamp = timestamp,
+        .layer = layer,
+        .position = position,
+        .timestamp = timestamp,
     };
 
     LOG_DBG("layer: %d position: %d, binding name: %s", layer, position,

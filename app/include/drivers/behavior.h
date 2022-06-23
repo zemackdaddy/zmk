@@ -35,6 +35,12 @@ enum behavior_locality {
     BEHAVIOR_LOCALITY_GLOBAL
 };
 
+enum behavior_locality {
+    BEHAVIOR_LOCALITY_CENTRAL,
+    BEHAVIOR_LOCALITY_EVENT_SOURCE,
+    BEHAVIOR_LOCALITY_GLOBAL
+};
+
 __subsystem struct behavior_driver_api {
     enum behavior_locality locality;
     behavior_keymap_binding_callback_t binding_convert_central_state_dependent_params;

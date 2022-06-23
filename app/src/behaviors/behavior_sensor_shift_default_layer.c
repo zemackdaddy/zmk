@@ -67,7 +67,7 @@ static const struct behavior_driver_api behavior_sensor_shift_default_layer_driv
                                        CONFIG_ZMK_ENCODERS_DEFAULT_TRIGGERS_PER_ROTATION))};       \
     static struct behavior_sensor_shift_default_layer_sensor_data                                  \
         behavior_sensor_shift_default_layer_sensor_data_##n;                                       \
-    DEVICE_DT_INST_DEFINE(n, behavior_sensor_shift_default_layer_init, device_pm_control_nop,      \
+    DEVICE_DT_INST_DEFINE(n, behavior_sensor_shift_default_layer_init, NULL,      \
                           &behavior_sensor_shift_default_layer_sensor_data_##n,                    \
                           &behavior_sensor_shift_default_layer_cfg_##n, APPLICATION,               \
                           CONFIG_KERNEL_INIT_PRIORITY_DEFAULT,                                     \

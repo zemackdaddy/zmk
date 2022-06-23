@@ -159,7 +159,7 @@ int ec11_init(const struct device *dev) {
         .resolution = DT_INST_PROP_OR(n, resolution, 1),     \
         .steps = DT_INST_PROP_OR(n, steps, 0),     \
     };                                                                                             \
-    DEVICE_DT_INST_DEFINE(n, ec11_init, device_pm_control_nop, &ec11_data_##n, &ec11_cfg_##n,      \
-                          POST_KERNEL, CONFIG_SENSOR_INIT_PRIORITY, &ec11_driver_api);
+    DEVICE_DT_INST_DEFINE(n, ec11_init, NULL, &ec11_data_##n, &ec11_cfg_##n, POST_KERNEL,          \
+                          CONFIG_SENSOR_INIT_PRIORITY, &ec11_driver_api);
 
 DT_INST_FOREACH_STATUS_OKAY(EC11_INST)
