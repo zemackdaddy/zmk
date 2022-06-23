@@ -243,6 +243,12 @@ config ZMK_RGB_UNDERGLOW_ON_START
 	bool "RGB underglow starts on by default"
 	default y
 
+config ZMK_RGB_UNDERGLOW_AUTO_OFF_IDLE
+	bool "Turn off RGB underglow when keyboard goes into idle state"
+
+config ZMK_RGB_UNDERGLOW_AUTO_OFF_USB
+	bool "Turn off RGB underglow when USB is disconnected"
+
 #ZMK_RGB_UNDERGLOW
 endif
 
@@ -471,4 +477,3 @@ osource "$(ZMK_CONFIG)/boards/shields/*/Kconfig.shield"
 
 
 source "Kconfig.zephyr"
-
