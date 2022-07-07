@@ -172,47 +172,79 @@ static void zmk_rgb_underglow_effect_swirl() {
 
 static void zmk_rgb_underglow_effect_layer_default() {
     struct led_rgb rgb;
-    switch (zmk_keymap_layer_default()) {
-    case 0:
-        rgb.r = 255;
-        rgb.g = 255;
-        rgb.b = 255;
-        break;
-    case 1:
-        rgb.r = 195;
-        rgb.g = 150;
-        rgb.b = 195;
-        break;
-    case 2:
-        rgb.r = 150;
-        rgb.g = 150;
-        rgb.b = 195;
-        break;
-    case 3:
-        rgb.r = 255;
-        rgb.g = 0;
-        rgb.b = 0;
-        break;
-    case 4:
-        rgb.r = 0;
-        rgb.g = 255;
-        rgb.b = 255;
-        break;
-    case 5:
-        rgb.r = 255;
-        rgb.g = 0;
-        rgb.b = 255;
-        break;
-    default:
-        break;
-    }
+    LOG_DBG("owo");
+    if (zmk_keymap_layer_active(3)) {
+        LOG_DBG("BLEEP BLOOP");
+        if (!state.on) {
+#if IS_ENABLED(CONFIG_ZMK_RGB_UNDERGLOW_EXT_POWER)
+            if (ext_power != NULL) {
+                int rc = ext_power_enable(ext_power);
+                if (rc != 0) {
+                    LOG_ERR("Unable to enable EXT_POWER: %d", rc);
+                }
+            }
+#endif
 
-    for (int i = 0; i < STRIP_NUM_PIXELS; i++) {
-        pixels[i] = rgb;
+            state.on = true;
+            state.animation_step = 0;
+        }
+        switch (zmk_keymap_layer_default()) {
+        case 0:
+            rgb.r = 255;
+            rgb.g = 0;
+            rgb.b = 0;
+            break;
+        case 1:
+            rgb.r = 0;
+            rgb.g = 255;
+            rgb.b = 0;
+            break;
+        case 2:
+            rgb.r = 0;
+            rgb.g = 0;
+            rgb.b = 255;
+            break;
+        case 3:
+            rgb.r = 255;
+            rgb.g = 255;
+            rgb.b = 0;
+            break;
+        case 4:
+            rgb.r = 0;
+            rgb.g = 255;
+            rgb.b = 255;
+            break;
+        case 5:
+            rgb.r = 255;
+            rgb.g = 0;
+            rgb.b = 255;
+            break;
+        default:
+            break;
+        }
+
+        for (int i = 0; i < STRIP_NUM_PIXELS; i++) {
+            pixels[i] = rgb;
+        }
+    } else {
+        if (state.on) {
+            if (ext_power != NULL) {
+                int rc = ext_power_disable(ext_power);
+                if (rc != 0) {
+                    LOG_ERR("Unable to disable EXT_POWER: %d", rc);
+                }
+            }
+            for (int i = 0; i < STRIP_NUM_PIXELS; i++) {
+                pixels[i] = (struct led_rgb){r : 0, g : 0, b : 0};
+            }
+
+            state.on = false;
+        }
     }
 }
 
 static void zmk_rgb_underglow_tick(struct k_work *work) {
+    LOG_DBG("are things bahhpeh");
     switch (state.current_effect) {
     case UNDERGLOW_EFFECT_SOLID:
         zmk_rgb_underglow_effect_solid();
@@ -237,9 +269,6 @@ static void zmk_rgb_underglow_tick(struct k_work *work) {
 K_WORK_DEFINE(underglow_work, zmk_rgb_underglow_tick);
 
 static void zmk_rgb_underglow_tick_handler(struct k_timer *timer) {
-    if (!state.on) {
-        return;
-    }
 
     k_work_submit(&underglow_work);
 }
