@@ -175,22 +175,22 @@ static void zmk_rgb_underglow_effect_layer_default() {
     switch (zmk_keymap_layer_default()) {
     case 0:
         rgb.r = 255;
-        rgb.g = 255;
-        rgb.b = 255;
+        rgb.g = 0;
+        rgb.b = 0;
         break;
     case 1:
-        rgb.r = 195;
-        rgb.g = 150;
-        rgb.b = 195;
+        rgb.r = 0;
+        rgb.g = 255;
+        rgb.b = 0;
         break;
     case 2:
-        rgb.r = 150;
-        rgb.g = 150;
-        rgb.b = 195;
+        rgb.r = 0;
+        rgb.g = 0;
+        rgb.b = 255;
         break;
     case 3:
         rgb.r = 255;
-        rgb.g = 0;
+        rgb.g = 255;
         rgb.b = 0;
         break;
     case 4:
@@ -319,8 +319,8 @@ static int zmk_rgb_underglow_init(const struct device *_arg) {
 #endif
 
 #if IS_ENABLED(CONFIG_ZMK_RGB_UNDERGLOW_AUTO_OFF_USB)
-    // Turn off rgb if usb not connected on init
-    if (!zmk_usb_is_powered())
+    //Turn off rgb if usb not connected on init
+    if(!zmk_usb_is_powered())
         state.on = false;
 #endif
 
