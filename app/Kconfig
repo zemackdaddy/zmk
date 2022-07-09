@@ -249,6 +249,10 @@ config ZMK_RGB_UNDERGLOW_AUTO_OFF_IDLE
 config ZMK_RGB_UNDERGLOW_AUTO_OFF_USB
 	bool "Turn off RGB underglow when USB is disconnected"
 
+config ZMK_RGB_UNDERGLOW_LAYER_ON
+	bool "Turn off RGB underglow except when in shift layer"
+	default n
+
 #ZMK_RGB_UNDERGLOW
 endif
 

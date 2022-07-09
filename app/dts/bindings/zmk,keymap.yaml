@@ -16,3 +16,18 @@ child-binding:
     sensor-bindings:
       type: phandle-array
       required: false
+    ledoverride:
+      type: boolean
+      required: false
+    r:
+      type: int
+      required: false
+      default: 255
+    g:
+      type: int
+      required: false
+      default: 255
+    b:
+      type: int
+      required: false
+      default: 255
