@@ -172,22 +172,13 @@ static void zmk_rgb_underglow_effect_swirl() {
 
 static void zmk_rgb_underglow_effect_layer_default() {
     struct led_rgb rgb;
-    LOG_DBG("owo");
-    if (zmk_keymap_layer_active(3)) {
-        LOG_DBG("BLEEP BLOOP");
-        if (!state.on) {
-#if IS_ENABLED(CONFIG_ZMK_RGB_UNDERGLOW_EXT_POWER)
-            if (ext_power != NULL) {
-                int rc = ext_power_enable(ext_power);
-                if (rc != 0) {
-                    LOG_ERR("Unable to enable EXT_POWER: %d", rc);
-                }
-            }
-#endif
-
-            state.on = true;
-            state.animation_step = 0;
-        }
+    uint8_t layer = zmk_keymap_layer_default();
+    const struct zmk_keymap_led_config *led_config = zmk_keymap_get_led_config(layer);
+    if (led_config->override) {
+        rgb.r = led_config->r;
+        rgb.g = led_config->g;
+        rgb.b = led_config->b;
+    } else {
         switch (zmk_keymap_layer_default()) {
         case 0:
             rgb.r = 255;
@@ -222,25 +213,19 @@ static void zmk_rgb_underglow_effect_layer_default() {
         default:
             break;
         }
-
+    }
+#if IS_ENABLED(CONFIG_ZMK_RGB_UNDERGLOW_LAYER_ON)
+    char *name = zmk_keymap_layer_label(zmk_keymap_highest_layer_active());
+    if (!strcmp(name, "shift") && !state.on) {
+        zmk_rgb_underglow_on();
+    } else if (strcmp(name, "shift") && state.on) {
+        zmk_rgb_underglow_off();
+    }
+#endif
+    if (state.on)
         for (int i = 0; i < STRIP_NUM_PIXELS; i++) {
             pixels[i] = rgb;
         }
-    } else {
-        if (state.on) {
-            if (ext_power != NULL) {
-                int rc = ext_power_disable(ext_power);
-                if (rc != 0) {
-                    LOG_ERR("Unable to disable EXT_POWER: %d", rc);
-                }
-            }
-            for (int i = 0; i < STRIP_NUM_PIXELS; i++) {
-                pixels[i] = (struct led_rgb){r : 0, g : 0, b : 0};
-            }
-
-            state.on = false;
-        }
-    }
 }
 
 static void zmk_rgb_underglow_tick(struct k_work *work) {
@@ -269,7 +254,6 @@ static void zmk_rgb_underglow_tick(struct k_work *work) {
 K_WORK_DEFINE(underglow_work, zmk_rgb_underglow_tick);
 
 static void zmk_rgb_underglow_tick_handler(struct k_timer *timer) {
-
     k_work_submit(&underglow_work);
 }
 
@@ -390,7 +374,6 @@ int zmk_rgb_underglow_on() {
 
     state.on = true;
     state.animation_step = 0;
-    k_timer_start(&underglow_tick, K_NO_WAIT, K_MSEC(50));
 
     return zmk_rgb_underglow_save_state();
 }
@@ -414,7 +397,6 @@ int zmk_rgb_underglow_off() {
 
     led_strip_update_rgb(led_strip, pixels, STRIP_NUM_PIXELS);
 
-    k_timer_stop(&underglow_tick);
     state.on = false;
 
     return zmk_rgb_underglow_save_state();

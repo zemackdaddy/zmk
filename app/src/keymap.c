@@ -57,7 +57,19 @@ static uint8_t _zmk_keymap_layer_default = 0;
 
 #endif /* ZMK_KEYMAP_HAS_SENSORS */
 
-#define LAYER_LABEL(node) COND_CODE_0(DT_NODE_HAS_PROP(node, label), (NULL), (DT_LABEL(node))),
+#define LAYER_LABEL(node) COND_CODE_0(DT_NODE_HAS_PROP(node, label), (NULL), (DT_PROP(node, label))),
+#define LED_OVERRIDE(node) DT_PROP(node, ledoverride),
+#define LED_R(node) DT_PROP(node, r),
+#define LED_G(node) DT_PROP(node, g),
+#define LED_B(node) DT_PROP(node, b),
+
+static bool _zmk_keymap_led_override[ZMK_KEYMAP_LAYERS_LEN] = {DT_INST_FOREACH_CHILD(0, LED_OVERRIDE)};
+static uint8_t _zmk_keymap_led_r[ZMK_KEYMAP_LAYERS_LEN] = {DT_INST_FOREACH_CHILD(0, LED_R)};
+static uint8_t _zmk_keymap_led_g[ZMK_KEYMAP_LAYERS_LEN] = {DT_INST_FOREACH_CHILD(0, LED_G)};
+static uint8_t _zmk_keymap_led_b[ZMK_KEYMAP_LAYERS_LEN] = {DT_INST_FOREACH_CHILD(0, LED_B)};
+
+static struct zmk_keymap_led_config _zmk_keymap_led_cfg;
+
 
 // State
 
@@ -104,6 +116,18 @@ static inline int set_layer_state(uint8_t layer, bool state) {
 uint8_t zmk_keymap_layer_default() { return _zmk_keymap_layer_default; }
 
 zmk_keymap_layers_state_t zmk_keymap_layer_state() { return _zmk_keymap_layer_state; }
+
+const struct zmk_keymap_led_config *zmk_keymap_get_led_config(uint8_t layer) { 
+    if (layer >= ZMK_KEYMAP_LAYERS_LEN) {
+        return NULL;
+    }
+    _zmk_keymap_led_cfg.override = _zmk_keymap_led_override[layer]; 
+    _zmk_keymap_led_cfg.r = _zmk_keymap_led_r[layer]; 
+    _zmk_keymap_led_cfg.g = _zmk_keymap_led_g[layer]; 
+    _zmk_keymap_led_cfg.b = _zmk_keymap_led_b[layer];
+    return &_zmk_keymap_led_cfg; 
+};
+
 
 bool zmk_keymap_layer_active_with_state(uint8_t layer, zmk_keymap_layers_state_t state_to_test) {
     // The default layer is assumed to be ALWAYS ACTIVE so we include an || here to ensure nobody

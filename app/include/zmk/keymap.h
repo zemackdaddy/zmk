@@ -21,6 +21,14 @@ int zmk_keymap_layer_to(uint8_t layer);
 int zmk_keymap_layer_change_default(int direction);
 const char *zmk_keymap_layer_label(uint8_t layer);
 
+struct zmk_keymap_led_config {
+    bool override;
+    uint8_t r;
+    uint8_t g;
+    uint8_t b;
+};
+
+const struct zmk_keymap_led_config *zmk_keymap_get_led_config(uint8_t layer);
 int zmk_keymap_position_state_changed(uint8_t source, uint32_t position, bool pressed,
                                       int64_t timestamp);
 
