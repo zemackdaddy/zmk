@@ -18,7 +18,7 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 #include <zmk/endpoints_types.h>
 #include <zmk/hog.h>
 #include <zmk/hid.h>
-#include <zmk/led_indicators.h>
+#include <zmk/hid_indicators.h>
 
 enum {
     HIDS_REMOTE_WAKE = BIT(0),
@@ -95,20 +95,21 @@ static ssize_t read_hids_input_report(struct bt_conn *conn, const struct bt_gatt
 static ssize_t write_hids_leds_report(struct bt_conn *conn, const struct bt_gatt_attr *attr,
                                       const void *buf, uint16_t len, uint16_t offset,
                                       uint8_t flags) {
-    if (flags & BT_GATT_WRITE_FLAG_PREPARE) {
-        return 0;
+    if (offset != 0 || len != sizeof(struct zmk_hid_led_report_body)) {
+        return BT_GATT_ERR(BT_ATT_ERR_NOT_SUPPORTED);
     }
 
-    if (len != sizeof(struct zmk_hid_led_report_body)) {
-        LOG_ERR("LED report is malformed: length=%d", len);
-        return BT_GATT_ERR(BT_ATT_ERR_INVALID_ATTRIBUTE_LEN);
+    struct zmk_hid_led_report_body *report = (struct zmk_hid_led_report_body *)buf;
+    int profile = zmk_ble_profile_index(bt_conn_get_dst(conn));
+    if (profile < 0) {
+        return BT_GATT_ERR(BT_ATT_ERR_UNLIKELY);
     }
 
-    struct zmk_hid_led_report_body *report =
-        (struct zmk_hid_led_report_body *)((uint8_t *)buf + offset);
-    uint8_t profile = zmk_ble_profile_index(bt_conn_get_dst(conn));
-
-    zmk_leds_process_report(report, ZMK_ENDPOINT_BLE, profile);
+    struct zmk_endpoint_instance endpoint = {
+        .transport = ZMK_TRANSPORT_BLE,
+        .ble_profile_index = profile,
+    };
+    zmk_hid_indicators_process_report(report, endpoint);
 
     return len;
 }

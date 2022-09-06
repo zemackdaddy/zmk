@@ -13,7 +13,7 @@
 #include <zmk/usb.h>
 #include <zmk/hid.h>
 #include <zmk/keymap.h>
-#include <zmk/led_indicators.h>
+#include <zmk/hid_indicators.h>
 #include <zmk/event_manager.h>
 
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
@@ -43,9 +43,13 @@ static int set_report_cb(const struct device *dev, struct usb_setup_packet *setu
     case HID_REPORT_ID_LEDS:
         if (*len != sizeof(struct zmk_hid_led_report)) {
             LOG_ERR("LED set report is malformed: length=%d", *len);
+            return -EINVAL;
         } else {
             struct zmk_hid_led_report *report = (struct zmk_hid_led_report *)*data;
-            zmk_leds_process_report(&report->body, ZMK_ENDPOINT_USB, 0);
+            struct zmk_endpoint_instance endpoint = {
+                .transport = ZMK_TRANSPORT_USB,
+            };
+            zmk_hid_indicators_process_report(&report->body, endpoint);
         }
         break;
     default:
