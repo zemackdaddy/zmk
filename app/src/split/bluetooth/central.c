@@ -22,12 +22,15 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 #include <zmk/ble.h>
 #include <zmk/behavior.h>
 #include <zmk/sensors.h>
+#include <zmk/rgb_underglow.h>
+#include <zmk/backlight.h>
 #include <zmk/split/bluetooth/uuid.h>
 #include <zmk/split/bluetooth/service.h>
 #include <zmk/event_manager.h>
 #include <zmk/events/position_state_changed.h>
 #include <zmk/events/sensor_event.h>
 #include <zmk/hid_indicators_types.h>
+#include <zmk/events/split_peripheral_status_changed.h>
 
 static int start_scanning(void);
 
@@ -50,6 +53,8 @@ struct peripheral_slot {
 #if IS_ENABLED(CONFIG_ZMK_SPLIT_PERIPHERAL_HID_INDICATORS)
     uint16_t update_hid_indicators;
 #endif // IS_ENABLED(CONFIG_ZMK_SPLIT_PERIPHERAL_HID_INDICATORS)
+    uint16_t update_led_handle;
+    uint16_t update_bl_handle;
     uint8_t position_state[POSITION_STATE_DATA_LEN];
     uint8_t changed_positions[POSITION_STATE_DATA_LEN];
 };
@@ -138,6 +143,8 @@ int release_peripheral_slot(int index) {
 #if IS_ENABLED(CONFIG_ZMK_SPLIT_PERIPHERAL_HID_INDICATORS)
     slot->update_hid_indicators = 0;
 #endif // IS_ENABLED(CONFIG_ZMK_SPLIT_PERIPHERAL_HID_INDICATORS)
+    slot->update_led_handle = 0;
+    slot->update_bl_handle = 0;
 
     return 0;
 }
@@ -345,15 +352,29 @@ static uint8_t split_central_chrc_discovery_func(struct bt_conn *conn,
     }
 
     bool subscribed = (slot->run_behavior_handle && slot->subscribe_params.value_handle);
+}
+else if (!bt_uuid_cmp(((struct bt_gatt_chrc *)attr->user_data)->uuid,
+                      BT_UUID_DECLARE_128(ZMK_SPLIT_BT_CHAR_UPDATE_LED_UUID))) {
+    LOG_DBG("Found update led handle");
+    slot->update_led_handle = bt_gatt_attr_value_handle(attr);
+}
+else if (!bt_uuid_cmp(((struct bt_gatt_chrc *)attr->user_data)->uuid,
+                      BT_UUID_DECLARE_128(ZMK_SPLIT_BT_CHAR_UPDATE_BL_UUID))) {
+    LOG_DBG("Found update bl handle");
+    slot->update_bl_handle = bt_gatt_attr_value_handle(attr);
+}
+
+bool subscribed = (slot->update_bl_handle && slot->update_led_handle && slot->run_behavior_handle &&
+                   slot->subscribe_params.value_handle);
 #if ZMK_KEYMAP_HAS_SENSORS
-    subscribed = subscribed && slot->sensor_subscribe_params.value_handle;
+subscribed = subscribed && slot->sensor_subscribe_params.value_handle;
 #endif /* ZMK_KEYMAP_HAS_SENSORS */
 
 #if IS_ENABLED(CONFIG_ZMK_SPLIT_PERIPHERAL_HID_INDICATORS)
-    subscribed = subscribed && slot->update_hid_indicators;
+subscribed = subscribed && slot->update_hid_indicators;
 #endif // IS_ENABLED(CONFIG_ZMK_SPLIT_PERIPHERAL_HID_INDICATORS)
 
-    return subscribed ? BT_GATT_ITER_STOP : BT_GATT_ITER_CONTINUE;
+return subscribed ? BT_GATT_ITER_STOP : BT_GATT_ITER_CONTINUE;
 }
 
 static uint8_t split_central_service_discovery_func(struct bt_conn *conn,
@@ -595,6 +616,8 @@ static void split_central_connected(struct bt_conn *conn, uint8_t conn_err) {
 
     confirm_peripheral_slot_conn(conn);
     split_central_process_connection(conn);
+    ZMK_EVENT_RAISE(new_zmk_split_peripheral_status_changed(
+        (struct zmk_split_peripheral_status_changed){.connected = true}));
 }
 
 static void split_central_disconnected(struct bt_conn *conn, uint8_t reason) {
@@ -604,7 +627,8 @@ static void split_central_disconnected(struct bt_conn *conn, uint8_t reason) {
     bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
 
     LOG_DBG("Disconnected: %s (reason %d)", addr, reason);
-
+    ZMK_EVENT_RAISE(new_zmk_split_peripheral_status_changed(
+        (struct zmk_split_peripheral_status_changed){.connected = false}));
     err = release_peripheral_slot_for_conn(conn);
 
     if (err < 0) {
