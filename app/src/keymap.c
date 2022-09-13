@@ -52,8 +52,8 @@ static uint8_t _zmk_keymap_layer_default = 0;
 #define SENSOR_LAYER(node)                                                                         \
     COND_CODE_1(                                                                                   \
         DT_NODE_HAS_PROP(node, sensor_bindings),                                                   \
-        ({UTIL_LISTIFY(DT_PROP_LEN(node, sensor_bindings), _TRANSFORM_SENSOR_ENTRY, node)}),       \
-        ({})),
+        ({UTIL_LISTIFY(DT_PROP_LEN(node, sensor_bindings), _TRANSFORM_SENSOR_ENTRY, node)}), ({})) \
+    ,
 
 #endif /* ZMK_KEYMAP_HAS_SENSORS */
 
@@ -132,11 +132,11 @@ int zmk_keymap_layer_toggle(uint8_t layer) {
     if (zmk_keymap_layer_active(layer)) {
         return zmk_keymap_layer_deactivate(layer);
     }
-
     return zmk_keymap_layer_activate(layer);
 };
 
 int zmk_keymap_layer_to(uint8_t layer) {
+    _zmk_keymap_layer_default = layer;
     for (int i = ZMK_KEYMAP_LAYERS_LEN - 1; i >= 0; i--) {
         zmk_keymap_layer_deactivate(i);
     }
