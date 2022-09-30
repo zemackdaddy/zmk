@@ -211,6 +211,11 @@ config ZMK_RGB_UNDERGLOW_BRT_MAX
 	range ZMK_RGB_UNDERGLOW_BRT_MIN 100
 	default 100
 
+config ZMK_RGB_UNDERGLOW_BRT_SCALE
+	int "RGB underglow brightness scale factor in percent"
+	range 0 100
+	default 5
+
 config ZMK_RGB_UNDERGLOW_HUE_STEP
 	int "RGB underglow hue step in degrees"
 	range 0 359
@@ -280,6 +285,11 @@ config ZMK_BACKLIGHT_BRT_START
 	int "Default brightness in percent"
 	range 1 100
 	default 40
+
+config ZMK_BACKLIGHT_BRT_SCALE
+	int "Default brightness in percent"
+	range 0 100
+	default 100
 
 config ZMK_BACKLIGHT_ON_START
 	bool "Default backlight state"

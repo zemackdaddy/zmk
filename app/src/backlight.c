@@ -61,7 +61,7 @@ static int zmk_backlight_update() {
 #if ZMK_BLE_IS_CENTRAL
     zmk_backlight_central_send();
 #endif
-    uint8_t brt = zmk_backlight_get_brt();
+    uint8_t brt = ((zmk_backlight_get_brt() * CONFIG_ZMK_BACKLIGHT_BRT_SCALE) / 100);
     LOG_DBG("Update backlight brightness: %d%%", brt);
 
     for (int i = 0; i < BACKLIGHT_NUM_LEDS; i++) {
