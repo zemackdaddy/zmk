@@ -33,6 +33,10 @@ static int start_scan(void);
 
 #define POSITION_STATE_DATA_LEN 16
 
+#define BT_LE_SCAN_PASSIVE_FILTER                                                                  \
+    BT_LE_SCAN_PARAM(BT_LE_SCAN_TYPE_PASSIVE, BT_LE_SCAN_OPT_FILTER_ACCEPT_LIST,                   \
+                     BT_GAP_SCAN_FAST_INTERVAL, BT_GAP_SCAN_FAST_WINDOW)
+
 enum peripheral_slot_state {
     PERIPHERAL_SLOT_STATE_OPEN,
     PERIPHERAL_SLOT_STATE_CONNECTING,
@@ -460,8 +464,29 @@ static void split_central_device_found(const bt_addr_le_t *addr, int8_t rssi, ui
 
 static int start_scan(void) {
     int err;
+    // Check to see if there are stil available open slots
+    bool filter = false;
+    bt_le_filter_accept_list_clear();
 
-    err = bt_le_scan_start(BT_LE_SCAN_PASSIVE, split_central_device_found);
+    bt_addr_le_t *peripheral_addr = zmk_ble_get_peripheral_addr();
+    char addr[BT_ADDR_LE_STR_LEN];
+    bt_addr_le_to_str(peripheral_addr, addr, sizeof(addr));
+    LOG_DBG("Peripheral BLE Address: %s", addr);
+
+    if (bt_addr_le_cmp(peripheral_addr, BT_ADDR_LE_ANY)) {
+        err = bt_le_filter_accept_list_add(peripheral_addr);
+        if (err)
+            LOG_DBG("error encountered adding address to whitelist %d", err);
+        filter = true;
+    }
+
+    LOG_DBG("Filtering status: %d", filter);
+    if (filter) {
+        err = bt_le_scan_start(BT_LE_SCAN_PASSIVE_FILTER, split_central_device_found);
+    } else {
+        err = bt_le_scan_start(BT_LE_SCAN_PASSIVE, split_central_device_found);
+    }
+
     if (err) {
         LOG_ERR("Scanning failed to start (err %d)", err);
         return err;
