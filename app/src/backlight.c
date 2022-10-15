@@ -206,7 +206,7 @@ static int backlight_event_listener(const zmk_event_t *eh) {
         const struct zmk_split_peripheral_status_changed *ev;
         ev = as_zmk_split_peripheral_status_changed(eh);
         if (ev->connected)
-            return k_work_schedule(&bl_update_work, K_MSEC(2500));
+            return k_work_reschedule(&bl_update_work, K_MSEC(2500));
         else
             return k_work_cancel_delayable(&bl_update_work);
     }

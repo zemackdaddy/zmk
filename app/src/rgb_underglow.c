@@ -807,6 +807,7 @@ static int rgb_underglow_auto_state(bool *prev_state, bool new_state) {
         return zmk_rgb_underglow_off();
 }
 
+#endif
 static int rgb_underglow_event_listener(const zmk_event_t *eh) {
 
 #if IS_ENABLED(CONFIG_ZMK_RGB_UNDERGLOW_AUTO_OFF_IDLE)
@@ -835,10 +836,13 @@ static int rgb_underglow_event_listener(const zmk_event_t *eh) {
         LOG_DBG("event called");
         const struct zmk_split_peripheral_status_changed *ev;
         ev = as_zmk_split_peripheral_status_changed(eh);
-        if (ev->connected)
-            return k_work_reschedule(&led_update_work, K_MSEC(2500));
-        else
-            return k_work_cancel_delayable(&led_update_work);
+        if (ev->connected) {
+            k_work_reschedule(&led_update_work, K_MSEC(2500));
+            return 0;
+        } else {
+            k_work_cancel_delayable(&led_update_work);
+            return 0;
+        }
     }
 #endif
 
@@ -846,8 +850,7 @@ static int rgb_underglow_event_listener(const zmk_event_t *eh) {
 }
 
 ZMK_LISTENER(rgb_underglow, rgb_underglow_event_listener);
-#endif // IS_ENABLED(CONFIG_ZMK_RGB_UNDERGLOW_AUTO_OFF_IDLE) ||
-       // IS_ENABLED(CONFIG_ZMK_RGB_UNDERGLOW_AUTO_OFF_USB)
+// IS_ENABLED(CONFIG_ZMK_RGB_UNDERGLOW_AUTO_OFF_USB)
 
 #if IS_ENABLED(CONFIG_ZMK_RGB_UNDERGLOW_AUTO_OFF_IDLE)
 ZMK_SUBSCRIPTION(rgb_underglow, zmk_activity_state_changed);
