@@ -24,17 +24,19 @@
 #include <zmk/event_manager.h>
 #include <zmk/events/activity_state_changed.h>
 #include <zmk/events/usb_conn_state_changed.h>
-#include <zmk/events/led_indicator_changed.h>
 #include <zmk/events/split_peripheral_status_changed.h>
-#include <zmk/led_indicators.h>
 #include <zmk/battery.h>
 #include <zmk/keymap.h>
 #include <zmk/ble.h>
 
 #if ZMK_BLE_IS_CENTRAL
 #include <zmk/split/bluetooth/central.h>
+#include <zmk/led_indicators.h>
 #else
 #include <zmk/split/bluetooth/peripheral.h>
+#include <zmk/led_indicators_types.h>
+#define ZMK_LED_NUMLOCK_BIT BIT(0)
+#define ZMK_LED_SCROLLLOCK_BIT BIT(2)
 #endif
 
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
