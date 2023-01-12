@@ -545,7 +545,8 @@ static void split_central_disconnected(struct bt_conn *conn, uint8_t reason) {
 }
 
 static struct bt_conn_cb conn_callbacks = {
-    .connected = split_central_connected, .disconnected = split_central_disconnected,
+    .connected = split_central_connected,
+    .disconnected = split_central_disconnected,
 };
 
 K_THREAD_STACK_DEFINE(split_central_split_run_q_stack,
