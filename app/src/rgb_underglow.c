@@ -244,6 +244,11 @@ static void zmk_rgb_underglow_effect_kinesis() {
         pixels[1].g = CONFIG_ZMK_RGB_UNDERGLOW_BRT_SCALE;
         pixels[1].b = 0;
         break;
+    case 4:
+        pixels[1].r = 0;
+        pixels[1].g = 0;
+        pixels[1].b = 0;
+        break;
     }
     // blink second led slowly if bluetooth not paired, quickly if not connected
     if (zmk_ble_active_profile_is_open()) {
