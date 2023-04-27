@@ -628,7 +628,8 @@ static int zmk_rgb_underglow_init(const struct device *_arg) {
     zmk_rgb_underglow_save_state();
     k_work_submit(&underglow_work);
     zmk_rgb_underglow_off();
-    zmk_rgb_underglow_on();
+    if (IS_ENABLED(CONFIG_ZMK_RGB_UNDERGLOW_ON_START))
+        zmk_rgb_underglow_on();
     triggered = false;
     return 0;
 }
