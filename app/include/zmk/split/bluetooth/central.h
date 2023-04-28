@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include <bluetooth/addr.h>
+#include <zephyr/bluetooth/addr.h>
 #include <zmk/behavior.h>
 #include <zmk/rgb_underglow.h>
 #include <zmk/backlight.h>
