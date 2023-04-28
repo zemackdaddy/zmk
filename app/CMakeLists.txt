@@ -67,7 +67,7 @@ if ((NOT CONFIG_ZMK_SPLIT) OR CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
   target_sources(app PRIVATE src/led_indicators_generic.c)
 
   target_sources_ifdef(CONFIG_ZMK_USB app PRIVATE src/usb_hid.c)
-  
+
   if (CONFIG_ZMK_BLE)
     target_sources(app PRIVATE src/events/ble_active_profile_changed.c)
     target_sources(app PRIVATE src/behaviors/behavior_bt.c)
