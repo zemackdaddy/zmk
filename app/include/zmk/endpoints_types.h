@@ -6,7 +6,21 @@
 
 #pragma once
 
-enum zmk_endpoint {
-    ZMK_ENDPOINT_USB,
-    ZMK_ENDPOINT_BLE,
+/**
+ * The method by which data is sent.
+ */
+enum zmk_transport {
+    ZMK_TRANSPORT_USB,
+    ZMK_TRANSPORT_BLE,
+};
+
+/**
+ * A specific endpoint to which data may be sent.
+ */
+struct zmk_endpoint_instance {
+    enum zmk_transport transport;
+    union {
+        // ZMK_TRANSPORT_USB: no data
+        int ble_profile_index; // ZMK_TRANSPORT_BLE
+    };
 };
