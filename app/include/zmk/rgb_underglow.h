@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include <zmk/led_indicators_types.h>
+#include <zmk/hid_indicators_types.h>
 
 struct zmk_led_hsb {
     uint16_t h;
@@ -16,7 +16,7 @@ struct zmk_led_hsb {
 
 struct zmk_periph_led {
     uint8_t layer;
-    zmk_leds_flags_t indicators;
+    zmk_hid_indicators indicators;
 };
 
 int zmk_rgb_underglow_toggle();

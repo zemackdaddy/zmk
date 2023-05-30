@@ -24,9 +24,9 @@
 #include <zmk/event_manager.h>
 #include <zmk/events/activity_state_changed.h>
 #include <zmk/events/usb_conn_state_changed.h>
-#include <zmk/events/led_indicator_changed.h>
+#include <zmk/events/hid_indicators_changed.h>
 #include <zmk/events/split_peripheral_status_changed.h>
-#include <zmk/led_indicators.h>
+#include <zmk/hid_indicators.h>
 #include <zmk/battery.h>
 #include <zmk/keymap.h>
 #include <zmk/ble.h>
@@ -222,7 +222,7 @@ static void zmk_rgb_underglow_effect_kinesis() {
 
     old_led_data.layer = led_data.layer;
     old_led_data.indicators = led_data.indicators;
-    led_data.indicators = zmk_leds_get_current_flags();
+    led_data.indicators = zmk_hid_indicators_get_current_profile();
     led_data.layer = zmk_keymap_highest_layer_active();
 
     pixels[0].r = (led_data.indicators & ZMK_LED_CAPSLOCK_BIT) * CONFIG_ZMK_RGB_UNDERGLOW_BRT_SCALE;
@@ -829,7 +829,7 @@ static int rgb_underglow_event_listener(const zmk_event_t *eh) {
 
 #if IS_ENABLED(CONFIG_ZMK_RGB_UNDERGLOW_AUTO_OFF_USB)
     if (as_zmk_usb_conn_state_changed(eh)) {
-        led_data.indicators = zmk_led_indicators_get_current_flags();
+        led_data.indicators = zmk_hid_indicators_get_current_profile();
         led_data.layer = zmk_keymap_highest_layer_active();
         int err = zmk_split_bt_update_led(&led_data);
         if (err) {
