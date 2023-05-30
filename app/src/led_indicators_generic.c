@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include <kernel.h>
-#include <logging/log.h>
+#include <zephyr/kernel.h>
+#include <zephyr/logging/log.h>
 
 #include <zmk/ble.h>
 #include <zmk/endpoints.h>

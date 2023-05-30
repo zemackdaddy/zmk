@@ -4,12 +4,12 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include <kernel.h>
-#include <device.h>
-#include <init.h>
+#include <zephyr/kernel.h>
+#include <zephyr/device.h>
+#include <zephyr/init.h>
 
-#include <logging/log.h>
-#include <drivers/led.h>
+#include <zephyr/logging/log.h>
+#include <zephyr/drivers/led.h>
 
 #include <zmk/event_manager.h>
 #include <zmk/led_indicators.h>
