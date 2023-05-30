@@ -530,7 +530,7 @@ static void split_central_disconnected(struct bt_conn *conn, uint8_t reason) {
 
     bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
 
-    LOG_DBG("Disconnected: %s (reason %d)", log_strdup(addr), reason);
+    LOG_DBG("Disconnected: %s (reason %d)", addr, reason);
     ZMK_EVENT_RAISE(new_zmk_split_peripheral_status_changed(
         (struct zmk_split_peripheral_status_changed){.connected = false}));
     err = release_peripheral_slot_for_conn(conn);
@@ -629,12 +629,12 @@ int zmk_split_bt_invoke_behavior(uint8_t source, struct zmk_behavior_binding *bi
 }
 
 K_THREAD_STACK_DEFINE(split_central_split_led_q_stack,
-                      CONFIG_ZMK_BLE_SPLIT_CENTRAL_SPLIT_LED_STACK_SIZE);
+                      CONFIG_ZMK_SPLIT_BLE_CENTRAL_SPLIT_LED_STACK_SIZE);
 
 struct k_work_q split_central_split_led_q;
 
 K_MSGQ_DEFINE(zmk_split_central_split_led_msgq, sizeof(struct zmk_split_update_led_data),
-              CONFIG_ZMK_BLE_SPLIT_CENTRAL_SPLIT_LED_QUEUE_SIZE, 2);
+              CONFIG_ZMK_SPLIT_BLE_CENTRAL_SPLIT_LED_QUEUE_SIZE, 2);
 
 void split_central_split_led_callback(struct k_work *work) {
     struct zmk_split_update_led_data payload;
@@ -688,12 +688,12 @@ int zmk_split_bt_update_led(struct zmk_periph_led *periph) {
 }
 
 K_THREAD_STACK_DEFINE(split_central_split_bl_q_stack,
-                      CONFIG_ZMK_BLE_SPLIT_CENTRAL_SPLIT_BL_STACK_SIZE);
+                      CONFIG_ZMK_SPLIT_BLE_CENTRAL_SPLIT_BL_STACK_SIZE);
 
 struct k_work_q split_central_split_bl_q;
 
 K_MSGQ_DEFINE(zmk_split_central_split_bl_msgq, sizeof(struct zmk_split_update_bl_data),
-              CONFIG_ZMK_BLE_SPLIT_CENTRAL_SPLIT_BL_QUEUE_SIZE, 2);
+              CONFIG_ZMK_SPLIT_BLE_CENTRAL_SPLIT_BL_QUEUE_SIZE, 2);
 
 void split_central_split_bl_callback(struct k_work *work) {
     struct zmk_split_update_bl_data payload;
