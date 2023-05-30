@@ -54,11 +54,11 @@ Next, you need to enable PWM by adding the following lines to your `.overlay` or
 
 ```
 &pwm0 {
-	status = "okay";
-	ch0-pin = <33>;
-	/* ch0-inverted; */
-	ch1-pin = <35>;
-	/* ch1-inverted; */
+    status = "okay";
+    ch0-pin = <33>;
+    /* ch0-inverted; */
+    ch1-pin = <35>;
+    /* ch1-inverted; */
 };
 ```
 
