@@ -18,3 +18,10 @@ int zmk_split_bt_invoke_behavior(uint8_t source, struct zmk_behavior_binding *bi
 int zmk_split_bt_update_hid_indicator(zmk_hid_indicators_t indicators);
 
 #endif // IS_ENABLED(CONFIG_ZMK_SPLIT_PERIPHERAL_HID_INDICATORS)
+#if IS_ENABLED(CONFIG_ZMK_RGB_UNDERGLOW)
+int zmk_split_bt_update_led(struct zmk_periph_led *periph);
+#endif
+
+#if IS_ENABLED(CONFIG_ZMK_BACKLIGHT)
+int zmk_split_bt_update_bl(struct backlight_state *periph);
+#endif
