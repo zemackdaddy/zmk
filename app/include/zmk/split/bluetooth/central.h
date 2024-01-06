@@ -25,3 +25,9 @@ int zmk_split_bt_update_led(struct zmk_periph_led *periph);
 #if IS_ENABLED(CONFIG_ZMK_BACKLIGHT)
 int zmk_split_bt_update_bl(struct backlight_state *periph);
 #endif
+
+#if IS_ENABLED(CONFIG_ZMK_SPLIT_BLE_CENTRAL_BATTERY_LEVEL_FETCHING)
+
+int zmk_split_get_peripheral_battery_level(uint8_t source, uint8_t *level);
+
+#endif // IS_ENABLED(CONFIG_ZMK_SPLIT_BLE_CENTRAL_BATTERY_LEVEL_FETCHING)

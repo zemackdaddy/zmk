@@ -57,7 +57,7 @@ static void zmk_backlight_central_send() {
 }
 #endif
 
-static int zmk_backlight_update() {
+static int zmk_backlight_update(void) {
 #if ZMK_BLE_IS_CENTRAL
     zmk_backlight_central_send();
 #endif
@@ -119,7 +119,7 @@ static int zmk_backlight_init(const struct device *_arg) {
     return zmk_backlight_update();
 }
 
-static int zmk_backlight_update_and_save() {
+static int zmk_backlight_update_and_save(void) {
     int rc = zmk_backlight_update();
     if (rc != 0) {
         return rc;
@@ -133,18 +133,18 @@ static int zmk_backlight_update_and_save() {
 #endif
 }
 
-int zmk_backlight_on() {
+int zmk_backlight_on(void) {
     state.brightness = MAX(state.brightness, CONFIG_ZMK_BACKLIGHT_BRT_STEP);
     state.on = true;
     return zmk_backlight_update_and_save();
 }
 
-int zmk_backlight_off() {
+int zmk_backlight_off(void) {
     state.on = false;
     return zmk_backlight_update_and_save();
 }
 
-int zmk_backlight_toggle() { return state.on ? zmk_backlight_off() : zmk_backlight_on(); }
+int zmk_backlight_toggle(void) { return state.on ? zmk_backlight_off() : zmk_backlight_on(); }
 
 int zmk_backlight_update_vals(struct backlight_state new_state) {
     state.on = new_state.on;
@@ -152,7 +152,7 @@ int zmk_backlight_update_vals(struct backlight_state new_state) {
     return zmk_backlight_update_and_save();
 }
 
-bool zmk_backlight_is_on() { return state.on; }
+bool zmk_backlight_is_on(void) { return state.on; }
 
 int zmk_backlight_set_brt(uint8_t brightness) {
     state.brightness = MIN(brightness, BRT_MAX);
@@ -160,14 +160,14 @@ int zmk_backlight_set_brt(uint8_t brightness) {
     return zmk_backlight_update_and_save();
 }
 
-uint8_t zmk_backlight_get_brt() { return state.on ? state.brightness : 0; }
+uint8_t zmk_backlight_get_brt(void) { return state.on ? state.brightness : 0; }
 
 uint8_t zmk_backlight_calc_brt(int direction) {
     int brt = state.brightness + (direction * CONFIG_ZMK_BACKLIGHT_BRT_STEP);
     return CLAMP(brt, 0, BRT_MAX);
 }
 
-uint8_t zmk_backlight_calc_brt_cycle() {
+uint8_t zmk_backlight_calc_brt_cycle(void) {
     if (state.brightness == BRT_MAX) {
         return 0;
     } else {
